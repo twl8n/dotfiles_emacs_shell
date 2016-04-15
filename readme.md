@@ -4,12 +4,18 @@ Overview
 
 See the extensive comments inline.
 
-.emacs.macos has the custom-set-faces for Macos fonts. 
+This single .emacs file works with both Apple Mac OS X and Linux. Unknown how it behaves on MS Windows.
+
+Unfortunately, to get multiplatform behavior, it kind of breaks with the typical convention of a single
+custom-set-variables and custom-set-faces. If you find the need to save something from Emacs customization
+user interface , a new custom-set-variables will appear at the end of the .emacs. You need to manually copy any
+new stuff from the section at the end into the optional settings around line 1083. After that, delete the
+spurious custom-set-variables at the end of the file.
 
 Setting the background to nil works in both windowing and -nw emacs. Sadly, in most xterms with -nw
 :background "White" ends up as gray.
 
-forward-screen and backward-screen are not working properly.
+forward-screen and backward-screen are not working as well as they could.
 
 Several of the delete keys that I kept hitting by accident have been unmapped.
 

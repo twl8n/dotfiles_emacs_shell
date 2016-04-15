@@ -7,18 +7,58 @@
 
 ;; Skip to "Core key bindings below" for key bindings.
 
-;; As long as ~/.emacs.d works, use it. If variable load-path does not contain
-;; your home directory .emacs.d after using ~/, then manually add explicit
-;; paths. This is necessary to make auto-complete work, and probably necessary
-;; for other stuff too. Note that there are other references to ~/ below. Best
-;; to figure out how to make ~/ work.
+;; http://stackoverflow.com/questions/24779041/disable-warning-about-emacs-d-in-load-path
 
-(add-to-list 'load-path "~/.emacs.d")
+;; Use ~/.emacs.d/lisp, which works fine with Linux and OSX. If variable load-path does not contain your home
+;; directory .emacs.d after using ~/, then you must manually add explicit paths. The lisp subdirectory was
+;; created to prevent accidental name conflicts.  Having a valid load-path is necessary to make auto-complete
+;; work, and probably necessary for other stuff too. Note that there are other references to ~/ below. Best to
+;; figure out how to make ~/ work.
+
+(add-to-list 'load-path "~/.emacs.d/lisp")
+(add-to-list 'load-path "/Users/twl/.emacs.d/lisp")
+
 
 ;; (add-to-list 'load-path "/home/mst3k/.emacs.d")
 ;; (add-to-list 'load-path "/home/merry.terry/.emacs.d")
 ;; (add-to-list 'load-path "/Users/mst/.emacs.d")
 ;; (add-to-list 'load-path "/Users/mst3k/.emacs.d")
+
+;; Notes about color.
+;; list-colors-display
+
+;; (tty-color-alist)
+
+;; (("black" 0 0 0 0) ("red" 1 52685 0 0) ("green" 2 0 52685 0) ("yellow" 3 52685 52685 0) ("blue" 4 0 0 61166) ("magenta" 5 52685 0 52685) ("cyan" 6 0 52685 52685) ("white" 7 58853 58853 58853))
+
+;; When set-background-color has no effect, use custom-set-faces to change the :background color of the
+;; default theme. When white is #e5e5e5 aka 58853, then set the background to nil in order to get white. The
+;; default theme is apparently "user", but I have not seen any commands using the name "user".
+
+;; (custom-set-faces '(default ((t (:background nil)))))
+;; (face-attribute 'default :background )
+;; "unspecified-bg"
+
+;; This works and seems to be the same as custom-set-faces :background nil. 
+;; (set-face-attribute 'default nil :background "unspecified-bg")
+
+;; This also works. custom-set-faces :background will accept nil or "unspecified-bg" as args.
+;; (custom-set-faces '(default ((t (:background "unspecified-bg")))))
+
+;; This works in nw to set the background white.
+;; (set-face-background 'default "unspecified-bg")
+
+;; Sets a tty color to white to #fffff, but this is not the "white" used by custom-set-faces. The default
+;; white in nw (nonwindowing mode) is #e5e5e5, although changing this doesn't seem to fix anything. After
+;; "fixing" white, custom-set-faces and set-face-background still make a #e5e5e5 background when asked to use
+;; "white"
+
+;; (tty-color-define "white" 7 (list (* 257 #xff) (* 257 #xff) (* 257 #xff)))
+
+;; This does not work in nw, but it is unclear why. It is clear that any valid color universally turns the
+;; background to #e5e5e5.
+
+;; (set-face-attribute 'default nil :background "#ffffff")
 
 ;; This is a 'require' that knows how to handle missing packages
 ;; gracefully. Return t on success and nil on failure so we can test the return
@@ -34,7 +74,25 @@
      (message "safe-require warning: %s" (error-message-string err))
      nil )))
 
+;; Hmmm. This doesn't use safe-require, so I wonder what happens if we dont' have sql-indent.el?
+(eval-after-load "sql"
+  '(load-library "sql-indent"))
+
+;; You must enable current line highlighting mode before setting the face. Set the highlight line mode color
+;; to very light gray. hl-line-mode only works on a per-buffer basis. The docs say the color is set via
+;; hl-line, but some other web page said hl-line-face, which works in Emacs v24. keywords hi hilite current
+;; line cursor hilight
+(global-hl-line-mode)
+(set-face-background hl-line-face "#eeeeee")
+
+;; Arg omitted, positive, or nil enables. Zero disables. Also see show-paren-delay
+(show-paren-mode)
+
 (setq debug-on-error nil)
+
+;; Force isearch to be case insensitive. Normally it is, but in find-dired is oddly becomes case-sensitive
+;; which is irritating when it is case-insensitive everywhere else.
+(setq isearch-case-fold-search t)
 
 (setq standard-indent 4)
 (setq nxml-child-indent standard-indent)
@@ -59,7 +117,13 @@
 ; The indent level. Default is 2.
 (setq cperl-indent-level standard-indent)
 
+;; Do not change } else to } \n else.
+;; *Non-nil means that BLOCK-end `}' followed by else/elsif/continue
+;; may be merged to be on the same line when indenting a region.
+(setq cperl-merge-trailing-else nil)
+
 ;; These settings either didn't do anything, or did things I don't like.
+
 
 ;; (setq cperl-invalid-face nil)
 ;; (setq cperl-indent-parens-as-block t)
@@ -78,12 +142,57 @@
 (autoload 'js2-mode "js2" nil t)
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 
+(autoload 'php-mode "php-mode.el" nil t)
 ;; somehow nxhtml overrides the php setting. Investigate.
 (add-to-list 'auto-mode-alist '("\\.php$" . php-mode))
 
+
+;; http://stackoverflow.com/questions/7228529/double-indent-when-using-emacs-php-mode
+;; http://www.emacswiki.org/emacs/IndentingC#toc2
+;; Align { } with opening statement, aka "linux" style.
+;;    if(foo)
+;;    {
+;;        bar++;
+;;    }
+
+(add-hook 'php-mode-hook 'my-php-mode-hook)
+(defun my-php-mode-hook ()
+  "My PHP mode configuration."
+  (setq indent-tabs-mode nil
+        tab-width 4
+        c-basic-offset 4
+        c-default-style "linux"
+        comment-multi-line nil
+        comment-start "/*"
+        comment-end   "*/"
+        comment-style 'extra-line))
+
+;; The hook settings below enable // comments for php.
+
+;; (defun my-php-mode-hook ()
+;;   "My PHP mode configuration."
+;;   (setq indent-tabs-mode nil
+;;         tab-width 4
+;;         c-basic-offset 4
+;;         c-default-style "linux"
+;;         comment-start "//"
+;;         comment-end   ""
+;;         comment-style 'indent-or-triple))
+
+
 (setq auto-mode-alist (cons (cons "\\.java$" 'c-mode) auto-mode-alist))
+;; (setq auto-mode-alist (cons (cons "\\.java$" 'java-mode) auto-mode-alist))
 ;; (setq auto-mode-alist (cons (cons "\\.cgi$" 'perl-mode) auto-mode-alist))
 (setq auto-mode-alist (cons (cons "\\.cgi$" 'cperl-mode) auto-mode-alist))
+
+;; added jun 24 2015
+;; https://github.com/mblakele/xquery-mode
+;; xquery mode
+;; (require 'xquery-mode)
+;; (autoload 'xquery-mode "xquery-mode" "XQuery mode" t )
+;; (setq auto-mode-alist
+;;       (append '(("\\.xqy$" . xquery-mode)) auto-mode-alist))
+
 
 ;; http://stackoverflow.com/questions/2081577/setting-emacs-split-to-horizontal Stop the
 ;; window from splitting vertically. For example, when compiling, I want the window split
@@ -163,10 +272,26 @@
 
 (setq auto-save-default nil)
 
+;; Do not backup or auto save sensitive or encrypted files. Elisp regex syntax is icky. This appends to the
+;; same list that associates file extensions with programming language modes like cperl-mode, c-mode,
+;; etc. More below.  http://stackoverflow.com/questions/151945/how-do-i-control-how-emacs-makes-backup-files
+
+(setq auto-mode-alist
+      (append
+       (list
+        '("\\.\\(vcf\\|gpg\\)$" . sensitive-minor-mode)
+        )
+       auto-mode-alist))
+
 ;; http://www.emacswiki.org/emacs/BackupDirectory 
+;; http://stackoverflow.com/questions/151945/how-do-i-control-how-emacs-makes-backup-files
 
 ;; This seems to help performance with sshfs fuse file systems by changing some remote
 ;; operations to local. Also keeps the directory tree cleaner.
+
+;; Nov 11 2014 Oddly, even with auto save disabled, some files occasionally end up in .saves. Unclear why, but
+;; it does mean that if you want those random saves to be local, you still need to configure a local save
+;; directory.
 
 (setq
  auto-save-file-name-transforms '((".*" "~/.saves/\\1" t))
@@ -175,12 +300,82 @@
  '(("." . "~/.saves"))    ; don't litter my fs tree
  delete-old-versions t)
 
+;; Totally disable.
+;; (setq make-backup-files nil)
+
+;; (setq delete-old-versions t
+;;   kept-new-versions 6
+;;   kept-old-versions 2
+;;   version-control t)
+
+;; Code to clean up old backups
+;; http://www.emacswiki.org/emacs/BackupDirectory
+;; (message "Deleting old backup files...")
+;; (let ((week (* 60 60 24 7))
+;;       (current (float-time (current-time))))
+;;   (dolist (file (directory-files temporary-file-directory t))
+;;     (when (and (backup-file-name-p file)
+;;                (> (- current (float-time (fifth (file-attributes file))))
+;;                   week))
+;;       (message "%s" file)
+;;       (delete-file file))))
+
 ;; Another suggestion Don't clutter with #files either
 ; (setq auto-save-file-name-transforms
 ;       `((".*" ,(expand-file-name (concat dotfiles-dir "backups")))))
 
 ;; create the autosave dir if necessary, since emacs won't.
 (make-directory "~/.saves/" t)
+
+;; Align comments within a region. Works well for SQL comments at the ends of lines in create table statements.
+;; http://stackoverflow.com/questions/20274336/how-to-automatically-align-comments-in-different-pieces-of-code
+
+;; Name function my- in a valiant attempt not to conflict with functions beginning align-
+(defun my-align-comments (beginning end)
+  "Align comments within marked region."
+  (interactive "*r")
+  (let (indent-tabs-mode align-to-tab-stop)
+    (align-regexp beginning end (concat "\\(\\s-*\\)"
+                                        (regexp-quote comment-start)))))
+
+;; This is somewhat specific to php source trees. Run find-dired, and ignore all the dot files as well as
+;; vendor and doc dirs. This gives a clean set of files in a .git directory tree, and ignores non-source files
+;; (vendor maybe from configure.phar, doc from phpdoc, etc.).
+
+;; ./doc/* will find the ./doc directory but no files
+;; ./doc* won't find the ./doc directory, but will also miss the file document.txt
+
+;; It is probably possible to use a regex and alternation to hide the top level directory but keep
+;; files. However, seeing top level directories isn't a problem, so I'm not spending time to work out the
+;; -regex solution (if there is one).
+
+(defun my-find-dired ()
+  "find-dired starting at the current directory."
+  (interactive)
+  (find-dired "." "-not -path './.*' -not -path './vendor/*' -not -path './doc/*'")
+  (rename-buffer 
+   (concat 
+    "*find-" 
+    (progn
+      (setq foo (replace-regexp-in-string "/$" "" default-directory))
+      (string-match ".*/\\(.*\\)$" foo)
+      (match-string 1 foo)))))
+
+;; alias my-align-comments to the shorter, more unique myc
+(defalias 'myc 'my-align-comments)
+
+;; Align at the space before the second word on the line. Used for the body of SQL create table statements.
+;; Name function my- in a valiant attempt not to conflict with functions beginning align-
+
+(defun my-align-second (beginning end) 
+ "align on second word"
+  (interactive "*r")
+  (align-regexp beginning end  "\\([a-z_]+\\)\\(\\s-*\\)\\([a-z_]+\\)" 2 1 nil)
+)
+
+;; alias my-align-second to the shorter, more unique mys
+(defalias 'mys 'my-align-second)
+
 
 ;; The terminal mode key maps used by ansi-term, eterm, etc. (I think). Char mode is
 ;; term-raw-map. Line mode is term-mode-map. One way to learn about active maps: C-u M-x
@@ -245,9 +440,13 @@
 ;; Instead, just get Emacs to add stuff to your path. The Mac GPG
 ;; tools are in /usr/local/bin.
 
+;; Nov 21 2015
+;; gnupg from pkgin is /opt/pkg/bin/gpg
+
 ;; http://lists.gnu.org/archive/html/help-gnu-emacs/2011-04/msg00210.html
 
 (setenv "PATH" (concat "/usr/local/bin" path-separator (getenv "PATH")))
+(setenv "PATH" (concat "/opt/pkg/bin/" path-separator (getenv "PATH")))
 
 ;; http://www.andreas-wilm.com/src/dot.emacs.html
 ;; This would work too, but has the path separator hard coded.
@@ -261,6 +460,8 @@
 
 (setq exec-path (append exec-path '("/usr/local/bin")))
 
+(setq exec-path (append exec-path '("/opt/pkg/bin")))
+
 ;; New emacs (or Aquamacs?) suddenly defaulted to bar instead of box. 
 ;; http://www.gnu.org/software/emacs/manual/html_node/elisp/Cursor-Parameters.html
 (setq-default cursor-type 'box) 
@@ -271,7 +472,7 @@
 ;; enable/disable menu bar and tool bar. Oddly, it is necessary to use
 ;; (tool-bar-mode 0) because nil doesn't work, contrary to what the
 ;; docs say.
-(tool-bar-mode 0)
+;; (tool-bar-mode 0)
 
 ; (menu-bar-mode 0)
 
@@ -311,10 +512,15 @@
 	   )
   )
 
+;; I wonder what this does? It appeared at the bottom of the file which implies that I saved some settings and
+;; emacs saved this setting for me.
+
+(put 'narrow-to-region 'disabled nil)
+
 ;; Enable auto-complete mode
 
 (when (require 'auto-complete-config nil t)
-  (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
+  (add-to-list 'ac-dictionary-directories "~/.emacs.d/lisp/ac-dict")
   (ac-config-default)
   (ac-set-trigger-key "TAB"))
 
@@ -406,10 +612,15 @@
 ;; re: font-lock (aka hilite, highlighting, colorized text, color) I decided to bind the
 ;; toggle to a key. Therefore the default is on, but I generally turn it off with C-xt.
 
-;; (global-font-lock-mode nil)
-;; (global-font-lock-mode 0)
+;; Feb 1 2016 Change default to disabled. This works for .emacs, .php, .pl When emacs launches and uses
+;; .emacs.desktop, the files are opened with font-lock disabled. That is, no syntax highlighting. Newly opened
+;; files are also monochrome.
+(global-font-lock-mode 0)
 
-;; This works.
+;; Apparently, nill is "enable". 
+;; (global-font-lock-mode nil)
+
+;; This does not prevent perl-mode from enabling font-lock.
 (setq font-lock-global-modes '(not perl-mode))
 
 ;; js2-mode breaks standard font lock in some new way, but is easily fixed.
@@ -424,6 +635,18 @@
 ;; Disable the nasty zmacs region highlighting in xemacs. Having it on
 ;; breaks mark-search-cut behavior. 
 (setq zmacs-regions nil)
+
+;; ispell settings Apr 15 2016
+;; RHEL seems to be /usr/bin/aspell
+;; OSX pkgin package manager uses /opt/pkg/bin/aspell
+
+(setq ispell-program-name "aspell")
+(if (string= system-type 'darwin )
+    ;; (setq ispell-program-name "/usr/pkg/bin/aspell")
+    (setq ispell-program-name "/opt/pkg/bin/aspell")
+  ;; else Linux
+  (setq ispell-program-name "/usr/bin/aspell")
+  )
 
 ;; Uncomment to automatically load ispell at startup.
 ;(load "ispell")
@@ -501,7 +724,31 @@
   (message "key not defined")
   )
 
-;; Core key bindings below. 
+
+;; http://www.emacswiki.org/emacs/UnfillParagraph
+
+;; A unfill-paragraph that works in lisp modes
+(defun unfill-paragraph (&optional region)
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive (progn (barf-if-buffer-read-only) '(t)))
+  (let ((fill-column (point-max))
+        (emacs-lisp-docstring-fill-column t))
+    (fill-paragraph nil region)))
+
+;; Core key bindings begin here. 
+
+;; Replace C-w kill-region with a defun that only kills the active region, and does not kill to the mark when
+;; not active. Killing to the mark when no active selection is really irritating, and I'm fairly sure I never
+;; want to do that. Or very rarely. If I want to kill to the mark, C-x C-x (exchange-point-and-mark) then C-w will do it.
+
+(defun kill-active-region () 
+ "kill region if active only or kill line normally"
+  (interactive)
+  (if (region-active-p)
+      (call-interactively 'kill-region)))
+
+(global-set-key (kbd "C-w") 'kill-active-region)
+
 
 ;; Unbind the key to center text. Too close to M-C-s and I never use
 ;; it. Disable.  In a lisp eval window, it didn't like the usual shortcuts for
@@ -525,6 +772,14 @@
 ;; meta-tab switching windows.
 (define-key global-map "\M-`" 'other-frame)
 
+;; Set a couple of mouse related events in the fringe which is the one character wide column at the edge of
+;; the buffer window. drag region causes the highlight to follow the mouse action. set region copies the
+;; region. My settings seem to cause the region *not* to be automatically copied into the kill ring. I have to
+;; kill-region C-w or kill-ring-save M-w.
+(global-set-key (kbd "<left-fringe> <down-mouse-1>") 'mouse-drag-region)
+(global-set-key (kbd "<left-fringe> <drag-mouse-1>") 'mouse-set-region)
+
+
 (define-key global-map [delete] 'delete-char)
 (define-key global-map [kp-delete] 'delete-char)
 (define-key global-map [backspace] 'backward-delete-char)
@@ -538,11 +793,6 @@
 (define-key minibuffer-local-map [backspace] 'backward-delete-char)
 
 (define-key isearch-mode-map '[backspace] 'isearch-delete-char)
-
-;; Unset certain undo bindings that are irritating to hit accidentally.
-
-;; (define-key user-minor-mode-map "\C-_" 'noop)
-;; (define-key user-minor-mode-map "\C-\\" 'noop)
 
 ;; I think this works now that the key spec is correct. Old comment:
 ;; none of this works to absolutely map my keys. other modes are
@@ -563,6 +813,9 @@
 
 ;; This seems to work too, and uses the (kbd) macro which seems handy.
 (global-unset-key (kbd "M-k"))
+(global-unset-key (kbd "C-_"))
+(global-unset-key (kbd "C-/"))
+
 
 ;; Unbind M-delete in the form of C-[-delete which (at least on the
 ;; Mac with standard Emacs) is different from M-delete. Both key
@@ -579,12 +832,20 @@
 ;; global key binding.
 (global-unset-key [C-delete])
 
+;; replace all the upcase-whatever keys because I confuse them with backward-up-list, and it is easy to M-x upcase-region.
+(define-key user-minor-mode-map "\C-xu" 'backward-up-list)
+(define-key user-minor-mode-map "\C-x\C-u" 'backward-up-list)
+
 ;; This seems to work too, although it rebinds the key to my defun
 ;; noop (as opposed to unbinding the key or binding to nil), and
 ;; global-unset-key can't unbind what this does.
 (define-key global-map "\C-[t" 'noop)
 (define-key user-minor-mode-map  "\C-[t" 'noop)
 
+
+
+;; This can be typed as M-u or \C-[ u
+(define-key user-minor-mode-map "\C-[u" 'backward-up-list)
 (define-key user-minor-mode-map "\C-[\C-a" 'beginning-of-defun-one)
 (define-key user-minor-mode-map "\C-[\C-e" 'end-of-defun-one)
 ;; (global-set-key "\C-[\C-a" 'beginning-of-defun-one)
@@ -622,7 +883,7 @@
 (define-key user-minor-mode-map "\C-[\C-[" 'repeat-complex-command)
 (define-key user-minor-mode-map "\C-[r" 'replace-string)
 (define-key user-minor-mode-map "\C-[f" 'fill-paragraph)
-(define-key user-minor-mode-map "\C-z" 'advertised-undo)
+(define-key user-minor-mode-map "\C-z" 'undo)
 
 ;; Setting keys to nil did not work. They still kept their default
 ;; actions.  C-S-backspace is control-shift-backspace. I hit
@@ -641,6 +902,17 @@
 (define-key user-minor-mode-map "\C-[l" 'recenter)
 (define-key user-minor-mode-map "\C-x\C-l" 'recenter)
 (define-key user-minor-mode-map "\C-l" 'recenter)
+
+;; was scroll-down-command and of course was often confused with paste.
+(define-key user-minor-mode-map (kbd "M-v") 'yank)
+;; Jan 22 2014 I just noticed that C-v was still bound to the built-in scroll-up. C-v is paste in most apps,
+;; and scroll-up is broken so it makes 2x sense to update the key binding.
+(define-key user-minor-mode-map (kbd "C-v") 'yank)
+
+;; was capitalize-word and was often confused with copy.
+(define-key user-minor-mode-map (kbd "M-c") 'kill-ring-save)
+
+;; Can't remap M-x because it execute-extended-command, which we kind of need to leave alone.
 
 ;;  Use a new function for page up and page down.  This one will place the cursor on the
 ;;  line where you started if you do the opposite. The default Emacs scroll-up and
@@ -671,8 +943,13 @@
   (interactive)
   (forward-line (- (- (window-height) 2))))
 
-;;  sep 19 2008 Could bind unindent and force-indent to keys, or just
-;;  create a keyboard macro everytime I need one of them.
+
+;; May 19 2015 What about M-\ delete-horizontal-space? Seems to work just fine as unindent.
+
+;; Or M-^ delete-indentation
+
+;; sep 19 2008 Could bind unindent and force-indent to keys, or just
+;; create a keyboard macro everytime I need one of them.
 
 (defun unindent ()
   ;; remove whitespace from the beginning of a line
@@ -761,10 +1038,9 @@
     )
   )
 
-;; This block exists because some setting are not portable across platforms and
-;; I don't like fatal errors in this file. Emacs saving customizations doesn't
-;; understand custom-set-variables when it is inside another block, so if you
-;; save you'll have to manually copy the new setting here.
+;; This error catching block exists because some settings are not portable across platforms and I don't like
+;; fatal errors in this file. Emacs saving customizations doesn't understand custom-set-variables when it is
+;; inside another block, so if you save you'll have to manually copy the new setting here.
 
 (condition-case err
     (custom-set-variables
@@ -773,6 +1049,11 @@
      '(ido-everywhere t)
      '(ido-show-dot-for-dired t)
      '(line-move-visual nil)
+     '(mode-line-format
+       (quote
+        ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
+         (vc-mode vc-mode)
+         "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
 
      ;; term-bind-key-alist and term-unbind-key-list only apply to
      ;; multi-term.el.
@@ -792,19 +1073,55 @@
      )
   (error ))
 
-;; (custom-set-faces
-;;   ;; custom-set-faces was added by Custom.
-;;   ;; If you edit it by hand, you could mess it up, so be careful.
-;;   ;; Your init file should contain only one such instance.
-;;   ;; If there is more than one, they won't work right.
-;;  '(default ((t (:inherit nil :stipple nil :background nil :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 136 :width normal :foundry "urw" :family "Nimbus Mono L")))))
+;; Operating system dependencies. 
 
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "White" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 210 :width normal :foundry "apple" :family "Inconsolata")))))
+;; We have two possible :background colors. The same two colors apply to both operating systems. Each os has a
+;; different custom-set-faces. After setting the os specific customizations, both use the same command to set
+;; the :background. Many settings are the same. The fonts are the big os specific issue. Could separate those
+;; out, although this works.
+
+(let ((bg_color "white"))
+  (if (string= window-system nil)
+      ;; (setq bg_color nil))
+      (custom-set-faces
+       '(default ((t (:inherit nil :stipple
+                               nil :background nil :foreground "black" :inverse-video
+                               nil :box nil :strike-through nil :overline nil :underline
+                               nil :slant normal :weight normal :height 151 :width
+                               normal :foundry "bitstream" :family "Courier 10 Pitch"))))
+       )
+    ;; else
+    (if (string= system-type 'darwin )
+        ;; Mac OSX darwin
+        (custom-set-faces
+         '(default ((t (:inherit nil :stipple
+                                 nil :background "white" :foreground "black" :inverse-video
+                                 nil :box nil :strike-through nil :overline nil :underline
+                                 nil :slant normal :weight normal :height 180 :width
+                                 normal :foundry "nil" :family "Courier"))))
+         ;; Inconsolata has incomplete unicode glyphs.
+         ;; '(default ((t (:inherit nil :stipple
+         ;;                         nil :foreground "black" :inverse-video nil :box
+         ;;                         nil :strike-through nil :overline nil :underline
+         ;;                         nil :slant normal :weight normal :height 210 :width
+         ;;                         normal :foundry "apple" :family "Inconsolata"))))
+         )
+      ;; else Linux
+      (custom-set-faces
+       '(default ((t (:inherit nil :stipple
+                               nil :background "white" :foreground "black" :inverse-video
+                               nil :box nil :strike-through nil :overline nil :underline
+                               nil :slant normal :weight normal :height 151 :width
+                               normal :foundry "bitstream" :family "Courier 10 Pitch"))))
+       ;; (default ((t (:inherit nil :stipple
+       ;;                        nil :foreground "black" :inverse-video nil :box
+       ;;                        nil :strike-through nil :overline nil :underline nil :slant
+       ;;                        normal :weight normal :height 136 :width
+       ;;                        normal :foundry "urw" :family "Nimbus Mono L"))))) 
+       )
+      ;; Since custom-set-faces doesn't like variables, use set-face-attribute.
+      (set-face-attribute 'default nil :background bg_color)
+      )))
 
 ;;http://code.google.com/p/js2-mode/wiki/InstallationInstructions
 
@@ -983,4 +1300,38 @@
 ;; Why did the available fonts change?
 ;;   '(font . "-Adobe-Courier-Medium-R-Normal--14-140-75-75-M-90-ISO8859-1"))
 
-(put 'narrow-to-region 'disabled nil)
+;; Unset certain undo bindings that are irritating to hit accidentally.
+
+;; (define-key user-minor-mode-map "\C-_" 'noop)
+;; (define-key user-minor-mode-map "\C-\\" 'noop)
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(auto-hscroll-mode t)
+ '(cua-mode nil nil (cua-base))
+ '(ess-S-assign "_")
+ '(ido-everywhere t)
+ '(ido-show-dot-for-dired t)
+ '(line-move-visual nil)
+ '(mode-line-format
+   (quote
+    ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
+     (vc-mode vc-mode)
+     "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
+ '(term-bind-key-alist
+   (quote
+    (("C-c C-x b" . switch-to-buffer)
+     ("C-c M-x" . execute-extended-command)
+     ("C-c C-c" . term-interrupt-subjob)
+     ("M-`" . other-frame)
+     ("C-m" . term-send-raw))))
+ '(term-unbind-key-list (quote ("C-c"))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 180 :width normal :foundry "nil" :family "Courier")))))
