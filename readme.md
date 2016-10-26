@@ -34,3 +34,20 @@ and I added a hook so they would work in the minibuffer. One set of key bindings
 bindings where they don't overlap with one of my preferred bindings.
 
 
+#### Additional unrelated notes
+
+After installing Brew, one of the zsh directories has group write privileges which is ostensibly a security issue. Fix it by a recursive chmod to 755, thus removing group write. As the message suggests, you can run compaudit to get a list of the (2) insecure directories.
+
+http://stackoverflow.com/questions/13762280/zsh-compinit-insecure-directories 
+
+The message:
+
+```
+zsh compinit: insecure directories, run compaudit for list.
+Ignore insecure directories and continue [y] or abort compinit [n]?
+```
+Open Terminal, and run this command:
+
+```
+sudo chmod -R 755 /usr/local/share/zsh
+```
