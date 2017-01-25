@@ -24,6 +24,14 @@
 ;; (add-to-list 'load-path "/Users/mst/.emacs.d")
 ;; (add-to-list 'load-path "/Users/mst3k/.emacs.d")
 
+;; Assume Emacs >= 24
+;; M-x list-packages to list and install.
+;; https://www.emacswiki.org/emacs/InstallingPackages
+
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+
+
 ;; Notes about color.
 ;; list-colors-display
 
@@ -344,20 +352,36 @@
 ;; create the autosave dir if necessary, since emacs won't.
 (make-directory "~/.saves/" t)
 
-;; Align comments within a region. Works well for SQL comments at the ends of lines in create table statements.
-;; http://stackoverflow.com/questions/20274336/how-to-automatically-align-comments-in-different-pieces-of-code
 
-;; Name function my- in a valiant attempt not to conflict with functions beginning align-
-(defun my-align-comments (beginning end)
-  "Align comments within marked region."
-  (interactive "*r")
-  (let (indent-tabs-mode align-to-tab-stop)
-    (align-regexp beginning end (concat "\\(\\s-*\\)"
-                                        (regexp-quote comment-start)))))
+(defun my-copy-path (&optional *dir-path-only-p)
+  "Copy the current buffer's file path or dired path to `kill-ring'.
+Result is full path.
+If `universal-argument' is called first, copy only the dir path.
+URL `http://ergoemacs.org/emacs/emacs_copy_file_path.html'
+Version 2016-07-17"
+  (interactive "P")
+  (let ((-fpath
+         (if (equal major-mode 'dired-mode)
+             ;; Emacs sets var default-directory (a directory) for the current buffer
+             (expand-file-name default-directory)
+           (if (null (buffer-file-name))
+               ;; Var buffer-file-name is the full path file name for current buffer
+               (user-error "Current buffer is not associated with a file.")
+             (buffer-file-name)))))
+    (kill-new
+     (if (null *dir-path-only-p)
+         (progn
+           (message "File path copied: %s" -fpath)
+           -fpath)
+       (progn
+         (message "Directory path copied: %s" (file-name-directory -fpath))
+         (file-name-directory -fpath))))))
 
-;; This is somewhat specific to php source trees. Run find-dired, and ignore all the dot files as well as
-;; vendor and doc dirs. This gives a clean set of files in a .git directory tree, and ignores non-source files
-;; (vendor maybe from configure.phar, doc from phpdoc, etc.).
+(defalias 'mcp 'my-copy-path)
+
+
+;; This whatever source trees I'm currently using most. Run find-dired, and ignore all the dot files as well as
+;; ./tmp/. This gives a clean set of files in a .git directory tree, and ignores non-source files
 
 ;; ./doc/* will find the ./doc directory but no files
 ;; ./doc* won't find the ./doc directory, but will also miss the file document.txt
@@ -366,10 +390,10 @@
 ;; files. However, seeing top level directories isn't a problem, so I'm not spending time to work out the
 ;; -regex solution (if there is one).
 
-(defun my-find-dired ()
-  "find-dired starting at the current directory."
+(defun mfd ()
+  "find-dired starting at the current directory. mfd for my-find-dired."
   (interactive)
-  (find-dired "." "-not -path './.*' -not -path './vendor/*' -not -path './doc/*' -not -path './coverage/*'")
+  (find-dired "." "-not -path './.*' -not -path './tmp/*'")
   (rename-buffer 
    (concat 
     "*find-" 
@@ -378,8 +402,19 @@
       (string-match ".*/\\(.*\\)$" foo)
       (match-string 1 foo)))))
 
-;; alias my-align-comments to the shorter, more unique myc
-(defalias 'myc 'my-align-comments)
+;; Align comments within a region. Works well for SQL comments at the ends of lines in create table statements.
+;; http://stackoverflow.com/questions/20274336/how-to-automatically-align-comments-in-different-pieces-of-code
+
+;; Name function my- in a valiant attempt not to conflict with functions beginning align-
+(defun my-align-comments (beginning end)
+  "Align comments within marked region."
+  (interactive "*r")
+  (let (indent-tabs-mode align-to-tab-stop)
+    (align-regexp beginning end 
+                  (concat "\\(\\s-*\\)" (regexp-quote comment-start)))))
+
+;; alias my-align-comments to the shorter, more unique mac
+(defalias 'mac 'my-align-comments)
 
 ;; Align at the space before the second word on the line. Used for the body of SQL create table statements.
 ;; Name function my- in a valiant attempt not to conflict with functions beginning align-
@@ -390,8 +425,8 @@
   (align-regexp beginning end  "\\([a-z_]+\\)\\(\\s-*\\)\\([a-z_]+\\)" 2 1 nil)
 )
 
-;; alias my-align-second to the shorter, more unique mys
-(defalias 'mys 'my-align-second)
+;; alias my-align-second to the shorter, more unique mas
+(defalias 'mas 'my-align-second)
 
 
 ;; The terminal mode key maps used by ansi-term, eterm, etc. (I think). Char mode is
@@ -439,7 +474,7 @@
 ;; http://www.emacswiki.org/emacs/CarbonEmacsPackage
 ;; http://xahlee.info/emacs/emacs_hyper_super_keys.html
 
-;; values: super, hyper, meta, nil
+;; values: super, hyper, meta, control, nil
 
 ;; I didn't try global-set-key. Maybe it would work. I switched to
 ;; define-key and the user-minor-mode-map so that my keybindings would
@@ -450,6 +485,7 @@
 (setq mac-command-key-is-meta t)
 (setq mac-command-modifier 'meta)
 (setq mac-option-modifier nil)
+(setq mac-function-modifier 'control)
 
 ;; re: gpg The daffy Mac and Aquamacs don't read .bash_profile and .bashrc
 ;; like the rest of the planet. You could go down the rabbit hole
@@ -1410,7 +1446,7 @@
     ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
      (vc-mode vc-mode)
      "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
- '(package-selected-packages (quote (cider)))
+ '(package-selected-packages (quote (paredit js2-mode cider)))
  '(php-template-compatibility nil)
  '(term-bind-key-alist
    (quote
