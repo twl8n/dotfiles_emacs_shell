@@ -39,23 +39,6 @@ and I added a hook so they would work in the minibuffer. One set of key bindings
 bindings where they don't overlap with one of my preferred bindings.
 
 
-#### Additional unrelated notes
-
-After installing Brew, one of the zsh directories has group write privileges which is ostensibly a security issue. Fix it by a recursive chmod to 755, thus removing group write. As the message suggests, you can run compaudit to get a list of the (2) insecure directories.
-
-http://stackoverflow.com/questions/13762280/zsh-compinit-insecure-directories 
-
-The message:
-
-```
-zsh compinit: insecure directories, run compaudit for list.
-Ignore insecure directories and continue [y] or abort compinit [n]?
-```
-Open Terminal, and run this command:
-
-```
-sudo chmod -R 755 /usr/local/share/zsh
-```
 
 #### Tramp message invalid-function (["scp"...
 
@@ -67,8 +50,6 @@ In my case, the error occured when Emacs was reading my .emacs.desktop and attem
 ~/.emacs.d/lisp/tramp
 ```
 In the emacs \*Messages\* buffer you'll see something like ```(invalid-function (["scp" nil "pp" nil]```
-
-In my case, the error occured when Emacs was reading my .emacs.desktop and attempting to re-open files from a previous session.
 
 In the .emacs.desktop was a lisp statement:
 ```
@@ -89,3 +70,22 @@ Copying that line and pasting into the \*scratch\* buffer (which defaults to lis
 ```
 Debugger entered--Lisp error: (invalid-function (["scp" nil "pp" nil] ("uname" "Linux 2.6.32-41-generic") ("test" "test") ("remote-path" ("/bin" "/usr/bin" "/usr/sbin" "/usr/local/bin")) ("remote-shell" "/bin/sh") ("readlink" "\\readlink") ("stat" "\\stat") ("file-exists" "test -e") ("id" "/usr/bin/id") ("gid-integer" 2014) ("local-encoding" base64-encode-region) ("local-decoding" base64-decode-region) ("remote-encoding" "base64") ("remote-decoding" "base64 -d") ("perl-file-spec" t) ("perl-cwd-realpath" t) ("perl" "\\perl") ("ls" "/bin/ls --color=never") ("ls-dired" t) ("uid-integer" 2014)))
 ```
+
+#### Other notes
+
+After installing Brew, one of the zsh directories has group write privileges which is ostensibly a security issue. Fix it by a recursive chmod to 755, thus removing group write. As the message suggests, you can run compaudit to get a list of the (2) insecure directories.
+
+http://stackoverflow.com/questions/13762280/zsh-compinit-insecure-directories 
+
+The message:
+
+```
+zsh compinit: insecure directories, run compaudit for list.
+Ignore insecure directories and continue [y] or abort compinit [n]?
+```
+Open Terminal, and run this command:
+
+```
+sudo chmod -R 755 /usr/local/share/zsh
+```
+
