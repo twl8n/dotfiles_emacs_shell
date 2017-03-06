@@ -57,8 +57,7 @@ Open Terminal, and run this command:
 sudo chmod -R 755 /usr/local/share/zsh
 ```
 
-Tramp message invalid-function (["scp"...
----------------
+#### Tramp message invalid-function (["scp"...
 
 In some situations (?) tramp creates a file that contains meta data about connection types. Unclear how, but mine had a section for scp and that section was wrong in some way. The fix is to delete ~/.emacs.d/lisp/tramp. It will be auto-created if necessary.
 
