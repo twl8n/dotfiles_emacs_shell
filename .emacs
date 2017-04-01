@@ -1,11 +1,16 @@
 
 ;; Tom Laudeman's .emacs file.
 
-;; Download a text version at http://defindit.com/readme_files/tom_emacs.txt. You must
-;; manually comment/uncomment custom-set-faces for Linux vs OSX. The font names aren't
-;; portable.
+;; Download from
+;; http://github.com/twl8n/dotfiles_emacs_shell/.emacs
+
+;; Note that I've moved custom settings inside an if that tests for operating system and type of windowing or
+;; cli environment. Also, font names aren't portable across platforms.  And other stuff.
 
 ;; Skip to "Core key bindings below" for key bindings.
+
+;; overload set-file-acl which doesn't work. 
+(defun set-file-acl (file acl-str) t)
 
 ;; http://stackoverflow.com/questions/24779041/disable-warning-about-emacs-d-in-load-path
 
@@ -37,7 +42,7 @@
 
 ;; (custom-set-faces '(default ((t (:background nil)))))
 ;; (face-attribute 'default :background )
-;; "unspecified-bg"
+;; "unspecified-bg" *************************************************
 
 ;; This works and seems to be the same as custom-set-faces :background nil. 
 ;; (set-face-attribute 'default nil :background "unspecified-bg")
@@ -202,6 +207,18 @@
 ;; (setq auto-mode-alist (cons (cons "\\.cgi$" 'perl-mode) auto-mode-alist))
 (setq auto-mode-alist (cons (cons "\\.cgi$" 'cperl-mode) auto-mode-alist))
 
+;; Added nov 24 2016
+;; http://clojure-doc.org/articles/tutorials/emacs.html
+;; Add melpa so we can get clojure related stuff.
+;; https://github.com/clojure-emacs/clojure-mode
+;; https://github.com/clojure-emacs/cider
+;; https://github.com/bbatsov/projectile
+
+(require 'package)
+(add-to-list 'package-archives
+             '("melpa-stable" . "http://stable.melpa.org/packages/") t)
+(package-initialize)
+
 ;; added jun 24 2015
 ;; https://github.com/mblakele/xquery-mode
 ;; xquery mode
@@ -317,6 +334,15 @@
  '(("." . "~/.saves"))    ; don't litter my fs tree
  delete-old-versions t)
 
+;; Save a backup everytime. Oddly, emacs defaults to only creating a backup once per session. 
+;; https://www.emacswiki.org/emacs/ForceBackups
+;; http://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save
+
+(add-hook 'before-save-hook  'force-backup-of-buffer)
+(defun force-backup-of-buffer ()
+    (setq buffer-backed-up nil))
+
+
 ;; create the autosave dir if necessary, since emacs won't.
 (make-directory "~/.saves/" t)
 
@@ -365,6 +391,32 @@
 (defalias 'mys 'my-align-second)
 
 
+(defun mcp (&optional *dir-path-only-p)
+  "Copy the current buffer's file path or dired path to `kill-ring'.
+Result is full path.
+If `universal-argument' is called first, copy only the dir path.
+URL `http://ergoemacs.org/emacs/emacs_copy_file_path.html'
+Version 2016-07-17"
+  (interactive "P")
+  (let ((-fpath
+         (if (equal major-mode 'dired-mode)
+             ;; Emacs sets var default-directory (a directory) for the current buffer
+             (expand-file-name default-directory)
+           (if (null (buffer-file-name))
+               ;; Var buffer-file-name is the full path file name for current buffer
+               (user-error "Current buffer is not associated with a file.")
+             (buffer-file-name)))))
+    (kill-new
+     (if (null *dir-path-only-p)
+         (progn
+           (message "File path copied: %s" -fpath)
+           -fpath)
+       (progn
+         (message "Directory path copied: %s" (file-name-directory -fpath))
+         (file-name-directory -fpath))))))
+
+(defalias 'my-copy-path 'mcp)
+
 
 ;; This is somewhat specific to php source trees. Run find-dired, and ignore all the dot files as well as
 ;; vendor and doc dirs. This gives a clean set of files in a .git directory tree, and ignores non-source files
@@ -377,10 +429,10 @@
 ;; files. However, seeing top level directories isn't a problem, so I'm not spending time to work out the
 ;; -regex solution (if there is one).
 
-(defun my-find-dired ()
+(defun mfd ()
   "find-dired starting at the current directory."
   (interactive)
-  (find-dired "." "-not -path './.*' -not -path './vendor/*' -not -path './doc/*' -not -path './coverage/*'")
+  (find-dired "." "-not -path './.*' -not -path './tmp/*'")
   (rename-buffer 
    (concat 
     "*find-" 
@@ -633,7 +685,7 @@
 ;; files are also monochrome.
 (global-font-lock-mode 0)
 
-;; Apparently, nill is "enable". 
+;; Apparently, nil is "enable". 
 ;; (global-font-lock-mode nil)
 
 ;; This does not prevent perl-mode from enabling font-lock.
@@ -642,6 +694,8 @@
 ;; js2-mode breaks standard font lock in some new way, but is easily fixed.
 ;; http://steve-yegge.blogspot.com/2008/03/js2-mode-new-javascript-mode-for-emacs.html
 (setq js2-use-font-lock-faces t)
+
+(setq js2-highlight-level nil)
 
 ;; Paste (yank) at the text cursor location, not at the 
 ;; location of the mouse pointer. This only applies to graphical (X)
@@ -820,11 +874,13 @@
 
 ;; This seems to work.
 (global-set-key "\C-[t" 'noop)
+(global-set-key "\C-z" 'undo)
 
 ;; This seems to work too, and uses the (kbd) macro which seems handy.
 (global-unset-key (kbd "M-k"))
 (global-unset-key (kbd "C-_"))
 (global-unset-key (kbd "C-/"))
+
 
 
 ;; Unbind M-delete in the form of C-[-delete which (at least on the
@@ -943,15 +999,42 @@
 ;;  Use new kdb syntax available as of 19.30
 ;;  http://tiny-tools.sourceforge.net/emacs-keys.html
 
-(defun forward-screen ()
-  "scroll down one screen in display."
+;; The next 4 functions allow page up and page down, keeping the cursor in the same relative position on the
+;; screen. This was a huge pita because after scrolling, emacs recenters the screen. move-to-window-line and
+;; foward-line would always fail to keep the relative cursor position at some point due to auto recentering.
+;; The solution is to call recenter with the relative cursor line position offset.
+
+(defun relative-line ()
+  "Get the relative line number from top of the window."
   (interactive)
-  (forward-line (- (window-height) 2)))
+  (let* ((clines (line-number-at-pos))
+         (ws-pos (line-number-at-pos (window-start))))
+    (if (< clines (window-height))
+        clines
+      (+ 1 (mod clines ws-pos)))))
+
+(defun half-window ()
+  "Integer rounded half window height"
+  (interactive)
+  (round (- (/ (window-height) 2.0) 0.1)))
+
+(defun forward-screen ()
+  "Scroll down one screen in display."
+  (interactive)
+  (let* ((rel-line (- (relative-line) 1))
+         (forw-line (- (window-height) 3)))
+    (progn
+      (forward-line forw-line)
+      (recenter rel-line))))
 
 (defun backward-screen ()
-  "scroll down one screen in display."
+  "Scroll up one screen in display."
   (interactive)
-  (forward-line (- (- (window-height) 2))))
+  (let* ((rel-line (- (relative-line) 1))
+         (forw-line (- (- (window-height) 3))))
+    (progn
+      (forward-line forw-line)
+      (recenter rel-line))))
 
 
 ;; May 19 2015 What about M-\ delete-horizontal-space? Seems to work just fine as unindent.
@@ -962,19 +1045,17 @@
 ;; create a keyboard macro everytime I need one of them.
 
 (defun unindent ()
-  ;; remove whitespace from the beginning of a line
+  "Remove whitespace from the beginning of a line."
   (interactive)
   (beginning-of-line)
   (re-search-forward "^[ 	]*")
-  (replace-match "")
-  )
+  (replace-match ""))
 
 (defun force-indent ()
-  "remove leading whitespace and insert a tab"
+  "Remove leading whitespace and insert a tab."
   (interactive)
   (unindent)
   (indent-relative)
-  ;; (insert "	")
   )
 
 ;;  man page mode uses one of my favorite key bindings. Over load it's function with
@@ -1047,6 +1128,7 @@
     (if sd_ok (recenter))
     )
   )
+
 
 ;; Two functions that enable editing delimiter separated values (dsv, comma separated values or tab separated
 ;; values) in org mode.
@@ -1185,8 +1267,8 @@
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 
 ;; Saves, backups, old versions of files.
-;; Totally disabled.
 
+;; Totally disabled, if you uncomment the line below:
 ;; (setq make-backup-files nil)
 
 ;; (setq delete-old-versions t
@@ -1252,14 +1334,14 @@
 
 ;; from defun my-shell-setup
 
-  ;; didn't work when the minor mode was disabled
-  ;; (local-set-key "\C-x"  'term-send-raw)  
+;; didn't work when the minor mode was disabled
+;; (local-set-key "\C-x"  'term-send-raw)  
 
-  ;; doesn't work
-  ;; (define-key term-raw-map "\C-x" 'term-send-raw)
+;; doesn't work
+;; (define-key term-raw-map "\C-x" 'term-send-raw)
 
-  ;; doesn't work
-  ;; (define-key term-mode-map "\C-x" 'term-send-raw)
+;; doesn't work
+;; (define-key term-mode-map "\C-x" 'term-send-raw)
 
 ;; end defun my-shell-setup
 
@@ -1364,9 +1446,6 @@
 ; 	   '(define-key mac-raw-map "\044" 'delete-other-windows)))
 
 
-;; No idea what this was supposed to do.
-;; (put 'upcase-region 'disabled nil)
-
 ;; The code below (when uncommented) creates an irritating bug in that
 ;; it overrides custom-font-faces when first loaded, but allows
 ;; custom-font-faces to work when loaded via load-file. I'm fairly
@@ -1417,3 +1496,4 @@
 ;;  ;; Your init file should contain only one such instance.
 ;;  ;; If there is more than one, they won't work right.
 ;;  '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 180 :width normal :foundry "nil" :family "Courier")))))
+
