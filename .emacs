@@ -29,6 +29,14 @@
 ;; (add-to-list 'load-path "/Users/mst/.emacs.d")
 ;; (add-to-list 'load-path "/Users/mst3k/.emacs.d")
 
+;; Assume Emacs >= 24
+;; M-x list-packages to list and install.
+;; https://www.emacswiki.org/emacs/InstallingPackages
+
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+
+
 ;; Notes about color.
 ;; list-colors-display
 
@@ -334,6 +342,7 @@
  '(("." . "~/.saves"))    ; don't litter my fs tree
  delete-old-versions t)
 
+
 ;; Save a backup everytime. Oddly, emacs defaults to only creating a backup once per session. 
 ;; https://www.emacswiki.org/emacs/ForceBackups
 ;; http://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save
@@ -377,19 +386,29 @@
 
 ;; Sep 8 2016 Applies only to SQL. Improved align second word by anchoring to beginning of line.
 
-(defun my-align-second (beginning end) 
- "align on second word"
-  (interactive "*r")
-  (align-regexp beginning end  "\\(^\\s-*[a-z_]+\\)\\(\\s-+\\)\\([a-z_]+\\)" 2 1 nil))
+;; (setq delete-old-versions t
+;;   kept-new-versions 6
+;;   kept-old-versions 2
+;;   version-control t)
 
-;; (defun my-align-second (beginning end) 
-;;  "align on second word"
-;;   (interactive "*r")
-;;   (align-regexp beginning end  "\\([^\\-][a-z_]+\\)\\(\\s-*\\)\\([a-z_]+\\)" 2 1 nil))
+;; Code to clean up old backups
+;; http://www.emacswiki.org/emacs/BackupDirectory
+;; (message "Deleting old backup files...")
+;; (let ((week (* 60 60 24 7))
+;;       (current (float-time (current-time))))
+;;   (dolist (file (directory-files temporary-file-directory t))
+;;     (when (and (backup-file-name-p file)
+;;                (> (- current (float-time (fifth (file-attributes file))))
+;;                   week))
+;;       (message "%s" file)
+;;       (delete-file file))))
 
-;; alias my-align-second to the shorter, more unique mys
-(defalias 'mys 'my-align-second)
+;; Another suggestion Don't clutter with #files either
+; (setq auto-save-file-name-transforms
+;       `((".*" ,(expand-file-name (concat dotfiles-dir "backups")))))
 
+;; create the autosave dir if necessary, since emacs won't.
+(make-directory "~/.saves/" t)
 
 (defun mcp (&optional *dir-path-only-p)
   "Copy the current buffer's file path or dired path to `kill-ring'.
@@ -418,9 +437,35 @@ Version 2016-07-17"
 (defalias 'my-copy-path 'mcp)
 
 
-;; This is somewhat specific to php source trees. Run find-dired, and ignore all the dot files as well as
-;; vendor and doc dirs. This gives a clean set of files in a .git directory tree, and ignores non-source files
-;; (vendor maybe from configure.phar, doc from phpdoc, etc.).
+(defun my-copy-path (&optional *dir-path-only-p)
+  "Copy the current buffer's file path or dired path to `kill-ring'.
+Result is full path.
+If `universal-argument' is called first, copy only the dir path.
+URL `http://ergoemacs.org/emacs/emacs_copy_file_path.html'
+Version 2016-07-17"
+  (interactive "P")
+  (let ((-fpath
+         (if (equal major-mode 'dired-mode)
+             ;; Emacs sets var default-directory (a directory) for the current buffer
+             (expand-file-name default-directory)
+           (if (null (buffer-file-name))
+               ;; Var buffer-file-name is the full path file name for current buffer
+               (user-error "Current buffer is not associated with a file.")
+             (buffer-file-name)))))
+    (kill-new
+     (if (null *dir-path-only-p)
+         (progn
+           (message "File path copied: %s" -fpath)
+           -fpath)
+       (progn
+         (message "Directory path copied: %s" (file-name-directory -fpath))
+         (file-name-directory -fpath))))))
+
+(defalias 'mcp 'my-copy-path)
+
+
+;; This whatever source trees I'm currently using most. Run find-dired, and ignore all the dot files as well as
+;; ./tmp/. This gives a clean set of files in a .git directory tree, and ignores non-source files
 
 ;; ./doc/* will find the ./doc directory but no files
 ;; ./doc* won't find the ./doc directory, but will also miss the file document.txt
@@ -430,7 +475,7 @@ Version 2016-07-17"
 ;; -regex solution (if there is one).
 
 (defun mfd ()
-  "find-dired starting at the current directory."
+  "find-dired starting at the current directory. mfd for my-find-dired."
   (interactive)
   (find-dired "." "-not -path './.*' -not -path './tmp/*'")
   (rename-buffer 
@@ -440,6 +485,33 @@ Version 2016-07-17"
       (setq foo (replace-regexp-in-string "/$" "" default-directory))
       (string-match ".*/\\(.*\\)$" foo)
       (match-string 1 foo)))))
+
+;; Align comments within a region. Works well for SQL comments at the ends of lines in create table statements.
+;; http://stackoverflow.com/questions/20274336/how-to-automatically-align-comments-in-different-pieces-of-code
+
+;; Name function my- in a valiant attempt not to conflict with functions beginning align-
+(defun my-align-comments (beginning end)
+  "Align comments within marked region."
+  (interactive "*r")
+  (let (indent-tabs-mode align-to-tab-stop)
+    (align-regexp beginning end 
+                  (concat "\\(\\s-*\\)" (regexp-quote comment-start)))))
+
+;; alias my-align-comments to the shorter, more unique mac
+(defalias 'mac 'my-align-comments)
+
+;; Align at the space before the second word on the line. Used for the body of SQL create table statements.
+;; Name function my- in a valiant attempt not to conflict with functions beginning align-
+
+(defun my-align-second (beginning end) 
+ "align on second word"
+  (interactive "*r")
+  (align-regexp beginning end  "\\([a-z_]+\\)\\(\\s-*\\)\\([a-z_]+\\)" 2 1 nil)
+)
+
+;; alias my-align-second to the shorter, more unique mas
+(defalias 'mas 'my-align-second)
+
 
 ;; The terminal mode key maps used by ansi-term, eterm, etc. (I think). Char mode is
 ;; term-raw-map. Line mode is term-mode-map. One way to learn about active maps: C-u M-x
@@ -486,7 +558,7 @@ Version 2016-07-17"
 ;; http://www.emacswiki.org/emacs/CarbonEmacsPackage
 ;; http://xahlee.info/emacs/emacs_hyper_super_keys.html
 
-;; values: super, hyper, meta, nil
+;; values: super, hyper, meta, control, nil
 
 ;; I didn't try global-set-key. Maybe it would work. I switched to
 ;; define-key and the user-minor-mode-map so that my keybindings would
@@ -497,6 +569,7 @@ Version 2016-07-17"
 (setq mac-command-key-is-meta t)
 (setq mac-command-modifier 'meta)
 (setq mac-option-modifier nil)
+(setq mac-function-modifier 'control)
 
 ;; re: gpg The daffy Mac and Aquamacs don't read .bash_profile and .bashrc
 ;; like the rest of the planet. You could go down the rabbit hole
@@ -511,6 +584,7 @@ Version 2016-07-17"
 
 (setenv "PATH" (concat "/usr/local/bin" path-separator (getenv "PATH")))
 (setenv "PATH" (concat "/opt/pkg/bin/" path-separator (getenv "PATH")))
+(setenv "PATH" (concat (getenv "HOME") "/bin" path-separator (getenv "PATH")))
 
 ;; http://www.andreas-wilm.com/src/dot.emacs.html
 ;; This would work too, but has the path separator hard coded.
@@ -522,8 +596,8 @@ Version 2016-07-17"
 ;; You must open a shell and determine the correct path to gpg
 ;; manually, then put that path in the line below.
 
+(setq exec-path (append exec-path '("/Users/twl/bin")))
 (setq exec-path (append exec-path '("/usr/local/bin")))
-
 (setq exec-path (append exec-path '("/opt/pkg/bin")))
 
 ;; New emacs (or Aquamacs?) suddenly defaulted to bar instead of box. 
@@ -706,11 +780,9 @@ Version 2016-07-17"
 ;; breaks mark-search-cut behavior. 
 (setq zmacs-regions nil)
 
-;; ispell settings
-;; sep 9 2016 Added /opt/pkg/bin/aspell for Home Mac 
+;; ispell settings jul 16 2015
 (setq ispell-program-name "aspell")
-;;(setq ispell-program-name "/usr/pkg/bin/aspell")
-;; (setq ispell-program-name "/opt/pkg/bin/aspell")
+(setq ispell-program-name "/usr/pkg/bin/aspell")
 
 ;; Uncomment to automatically load ispell at startup.
 ;(load "ispell")
@@ -1266,32 +1338,6 @@ Version 2016-07-17"
 (autoload 'js2-mode "js2" nil t)
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 
-;; Saves, backups, old versions of files.
-
-;; Totally disabled, if you uncomment the line below:
-;; (setq make-backup-files nil)
-
-;; (setq delete-old-versions t
-;;   kept-new-versions 6
-;;   kept-old-versions 2
-;;   version-control t)
-
-;; Code to clean up old backups
-;; http://www.emacswiki.org/emacs/BackupDirectory
-;; (message "Deleting old backup files...")
-;; (let ((week (* 60 60 24 7))
-;;       (current (float-time (current-time))))
-;;   (dolist (file (directory-files temporary-file-directory t))
-;;     (when (and (backup-file-name-p file)
-;;                (> (- current (float-time (fifth (file-attributes file))))
-;;                   week))
-;;       (message "%s" file)
-;;       (delete-file file))))
-
-;; Another suggestion Don't clutter with #files either
-; (setq auto-save-file-name-transforms
-;       `((".*" ,(expand-file-name (concat dotfiles-dir "backups")))))
-
 ;; Below are notes of things that didn't work. Perhaps this will be useful someday to
 ;; someone.
 
@@ -1466,34 +1512,4 @@ Version 2016-07-17"
 ;; (define-key user-minor-mode-map "\C-_" 'noop)
 ;; (define-key user-minor-mode-map "\C-\\" 'noop)
 
-;; (custom-set-variables
-;;  ;; custom-set-variables was added by Custom.
-;;  ;; If you edit it by hand, you could mess it up, so be careful.
-;;  ;; Your init file should contain only one such instance.
-;;  ;; If there is more than one, they won't work right.
-;;  '(auto-hscroll-mode t)
-;;  '(cua-mode nil nil (cua-base))
-;;  '(ess-S-assign "_")
-;;  '(ido-everywhere t)
-;;  '(ido-show-dot-for-dired t)
-;;  '(line-move-visual nil)
-;;  '(mode-line-format
-;;    (quote
-;;     ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
-;;      (vc-mode vc-mode)
-;;      "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
-;;  '(term-bind-key-alist
-;;    (quote
-;;     (("C-c C-x b" . switch-to-buffer)
-;;      ("C-c M-x" . execute-extended-command)
-;;      ("C-c C-c" . term-interrupt-subjob)
-;;      ("M-`" . other-frame)
-;;      ("C-m" . term-send-raw))))
-;;  '(term-unbind-key-list (quote ("C-c"))))
-;; (custom-set-faces
-;;  ;; custom-set-faces was added by Custom.
-;;  ;; If you edit it by hand, you could mess it up, so be careful.
-;;  ;; Your init file should contain only one such instance.
-;;  ;; If there is more than one, they won't work right.
-;;  '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 180 :width normal :foundry "nil" :family "Courier")))))
 
