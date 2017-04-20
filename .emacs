@@ -873,6 +873,9 @@ Version 2016-07-17"
 
 ;; Core key bindings begin here. 
 
+;; References about alt, control, hyper, meta, shift, super.
+;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Function-Keys.html
+
 ;; Replace C-w kill-region with a defun that only kills the active region, and does not kill to the mark when
 ;; not active. Killing to the mark when no active selection is really irritating, and I'm fairly sure I never
 ;; want to do that. Or very rarely. If I want to kill to the mark, C-x C-x (exchange-point-and-mark) then C-w will do it.
