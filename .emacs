@@ -1,4 +1,4 @@
-
+1
 ;; Tom Laudeman's .emacs file.
 
 ;; Download from
@@ -23,6 +23,19 @@
 (add-to-list 'load-path "~/.emacs.d/lisp")
 (add-to-list 'load-path "/Users/twl/.emacs.d/lisp")
 
+;; What does this message hook do?
+(add-hook 'message-mode-hook 'turn-on-orgtbl)
+
+;; For some strange reason, M-x can't run turn-on-orgtbl which also means that it won't tab-complete.
+;; (You can run it with M-: eval-expression (turn-on-orgtbl) but who can remember that?)
+;; I've created a little interactive function to handle this, and being interactive the name wil tab-complete.
+;; You only need to remember M-x orgtbl tab
+;; Yes, I know that the args are ignored, but I can't be bothered to think about that now.
+
+(defun orgtbl-enable (xx yy)
+  "Turn on the orgtbl-mode."
+  (interactive "*r")
+  (turn-on-orgtbl))
 
 ;; (add-to-list 'load-path "/home/mst3k/.emacs.d")
 ;; (add-to-list 'load-path "/home/merry.terry/.emacs.d")
@@ -119,6 +132,30 @@
 (show-paren-mode)
 
 (setq debug-on-error nil)
+
+;; Change isearch to always treat a single space literally, and not glob multiple spaces.
+;; One person suggests using quoted space in isearch when lax whitespace is enabled.
+;; Related:
+;; variable search-whitespace-regexp normally "\\s-+"
+;; function isearch-toggle-lax-whitespace
+
+;; vars
+(setq isearch-lax-whitespace nil)
+(setq isearch-regexp-lax-whitespace nil)
+
+;; Change isearch to always leave the mark at the beginning.
+;; https://www.emacswiki.org/emacs/IncrementalSearch
+
+(add-hook 'isearch-mode-end-hook 'my-goto-match-beginning)
+(defun my-goto-match-beginning ()
+  (when (and isearch-forward isearch-other-end)
+    (goto-char isearch-other-end)))
+
+(defadvice isearch-exit (after my-goto-match-beginning activate)
+  "Go to beginning of match."
+  (when (and isearch-forward isearch-other-end)
+    (goto-char isearch-other-end)))
+
 
 ;; Force isearch to be case insensitive. Normally it is, but in find-dired is oddly becomes case-sensitive
 ;; which is irritating when it is case-insensitive everywhere else.
@@ -222,10 +259,22 @@
 ;; https://github.com/clojure-emacs/cider
 ;; https://github.com/bbatsov/projectile
 
+;; Manually install cider
+;; M-x package-install [RET] cider [RET]
+;; Manually refresh the package contents
+;; M-x package-refresh-contents [RET]
+
 (require 'package)
+
+;; This should (auto?) install cider.
+;; (unless (package-installed-p 'cider)
+;;   (package-install 'cider))
+;; (add-to-list 'package-pinned-packages '(cider . "melpa-stable") t)
+
 (add-to-list 'package-archives
              '("melpa-stable" . "http://stable.melpa.org/packages/") t)
 (package-initialize)
+
 
 ;; added jun 24 2015
 ;; https://github.com/mblakele/xquery-mode
@@ -284,26 +333,30 @@
               vc-ignore-dir-regexp
               tramp-file-name-regexp))
 
-;; Using the tramp/ssh protocol scpx or scpc is faster than scp. I recommend scpx but scpc seems to be the new
-;; default. Check by using describe-variable on tramp-default-method. For a one-time test of scpx, scpc, or scp, you can
-;; also open a remote dir using an explicit protocol as such as: /scpx:dev/remote_dir/ and any files opened in that dir
-;; will (apparently) be opened with the same method as the directory.
+;; Tramp maintains its own control master, so even when tramp is using ControlMaster, you won't find the
+;; normal file in ~/.ssh/. The default tramp-ssh-controlmaster-options is "-o ControlMaster=auto -o
+;; ControlPath='tramp.%%C' -o ControlPersist=no" but heaven only knows what is the root path. I wasn't able to
+;; find it. I've changed the path to something I can find, and put the tramp file in .ssh (with a tramp-ish
+;; name) where ssh keeps its ControlPath
+
+;; See "tramp does not use default ssh ControlPath" at:
+;; https://www.gnu.org/software/emacs/manual/html_node/tramp/Frequently-Asked-Questions.html
+
+;; The older information here is interesting, but clearly incomplete: http://david.woodhou.se/openssh-control.html 
+
+(setq tramp-ssh-controlmaster-options
+                (concat
+                  "-o ControlPath=~/.ssh/tramp-%%r@%%h:%%p "
+                  "-o ControlMaster=yes -o ControlPersist=yes"))
+
+;; Using the tramp/ssh protocol scpx seems faster than scp. (scpc is obsolete, and apparently no longer
+;; supported.) Check by using describe-variable on tramp-default-method (assuming that you haven't already
+;; changed it, as I have below). For a one-time test of scpx, or scp, you can also open a remote dir using an
+;; explicit protocol as such as: /scpx:remote_host:remote_dir/ and any files opened in that dir will be opened
+;; with the same method as the directory.
 
 ;; http://lists.gnu.org/archive/html/tramp-devel/2012-03/msg00013.html
 ;; http://www.gnu.org/software/tramp/
-
-;; ControlPersist (or something in openssh 5.x) causes problems with scpc and ssh ControlMaster. When using scpc I have
-;; no master ssh session. Verify existence of master session via "ls -l .ssh/master*". If there is no master file when
-;; you have an active tramp session (a file open on the remote host via tramp), then ssh ControlMaster did not function
-;; as expected. In other words, control master does not work with scpc. scpx does not have this bug. I can't find
-;; ControlPersist in openssh 5.x on Linux or Mac OSX, which is confusing.
-
-;; The information here is interesting, but clearly incomplete: http://david.woodhou.se/openssh-control.html 
-
-;; Suggested use. Let us assume you are connecting to a remote host "zeus" with both Emacs and one or more ssh terminal
-;; sessions. Start emacs. Open at least one remote file or directoy. In your terminal ssh to zeus. Work. After working,
-;; exit the terminal session(s) first because Emacs has the ssh master session. Finally exit Emacs which closes the ssh
-;; master.
 
 (setq tramp-default-method "scpx")
 
@@ -314,9 +367,13 @@
 
 (setq auto-save-default nil)
 
+;; Really, totally disable backups.
+(setq make-backup-files nil)
+
 ;; Do not backup or auto save sensitive or encrypted files. Elisp regex syntax is icky. This appends to the
 ;; same list that associates file extensions with programming language modes like cperl-mode, c-mode,
-;; etc. More below.  http://stackoverflow.com/questions/151945/how-do-i-control-how-emacs-makes-backup-files
+;; etc. More below.
+;; http://stackoverflow.com/questions/151945/how-do-i-control-how-emacs-makes-backup-files
 
 (setq auto-mode-alist
       (append
@@ -335,21 +392,46 @@
 ;; it does mean that if you want those random saves to be local, you still need to configure a local save
 ;; directory.
 
+;; auto-save-file-name-transforms '((".*" "~/.saves/\\1" t))
+
 (setq
- auto-save-file-name-transforms '((".*" "~/.saves/\\1" t))
- backup-by-copying t      ; don't clobber symlinks
- backup-directory-alist
- '(("." . "~/.saves"))    ; don't litter my fs tree
+ auto-save-file-name-transforms '((".*" ".saves/\\1" t))
+ backup-by-copying-when-linked t ; this should not clobber symlinks, and seems smarter
+ backup-by-copying nil      ; (old?) don't clobber symlinks
+ backup-directory-alist '(("." . "~/.saves"))    ; don't litter my fs tree
  delete-old-versions t)
+
+;; https://www.gnu.org/software/emacs/manual/html_node/tramp/Auto_002dsave-and-Backup.html
+;; (setq tramp-backup-directory-alist backup-directory-alist)
+
 
 
 ;; Save a backup everytime. Oddly, emacs defaults to only creating a backup once per session. 
 ;; https://www.emacswiki.org/emacs/ForceBackups
 ;; http://stackoverflow.com/questions/6916529/how-can-i-make-emacs-backup-every-time-i-save
 
-(add-hook 'before-save-hook  'force-backup-of-buffer)
-(defun force-backup-of-buffer ()
-    (setq buffer-backed-up nil))
+;; Tramp buffers are copied from the remote to the local .saves, which can be very slow and doubles the time
+;; necessary to save.  Ideally, the local tramp file would be copied locally.  Or fix auto-save-file-name-transforms
+;; to not strip the hostname so that the file copy is made locally on whatever host it lives on.
+
+;; http://stackoverflow.com/questions/3893727/setting-emacs-tramp-to-store-local-backups
+
+;; 2017-05-12 disable this because tramp copies the file from the remote to .saves instead of
+;; renaming the old tmp file to .saves. Having this on basically doubles the time to save a file.
+
+;; Consider reverting the .saves to be on the remote where tramp can do a rename locally.
+
+;; We want to avoid the "Renaming" step:
+
+;; Saving file /scpx:tlaudeman-dev-v2:/home/ubuntu/todo.txt...
+;; Renaming /scpx:tlaudeman-dev-v2:/home/ubuntu/todo.txt to /Users/twl/.saves/!scpx:tlaudeman-dev-v2:!home!ubuntu!todo.txt~...done
+;; Copying /var/folders/rq/464nkvvd3k909kgrwnkhy5p80000gp/T/tramp.512ffy.txt to /scpx:tlaudeman-dev-v2:/home/ubuntu/todo.txt...done
+;; Wrote /scpx:tlaudeman-dev-v2:/home/ubuntu/todo.txt
+
+
+;; (add-hook 'before-save-hook  'force-backup-of-buffer)
+;; (defun force-backup-of-buffer ()
+;;     (setq buffer-backed-up nil))
 
 
 ;; create the autosave dir if necessary, since emacs won't.
@@ -477,7 +559,7 @@ Version 2016-07-17"
 (defun mfd ()
   "find-dired starting at the current directory. mfd for my-find-dired."
   (interactive)
-  (find-dired "." "-not -path './.*' -not -path './tmp/*'")
+  (find-dired "." "-not -path './.*' -not -path './tmp/*' -not -path './images/*' -not -path './target/*' ")
   (rename-buffer 
    (concat 
     "*find-" 
@@ -1295,7 +1377,7 @@ Version 2016-07-17"
       ;; (setq bg_color nil))
       (custom-set-faces
        '(default ((t (:inherit nil :stipple
-                               nil :background nil :foreground "black" :inverse-video
+                               nil :background "brightwhite" :foreground "black" :inverse-video
                                nil :box nil :strike-through nil :overline nil :underline
                                nil :slant normal :weight normal :height 151 :width
                                normal :foundry "bitstream" :family "Courier 10 Pitch"))))
@@ -1511,5 +1593,3 @@ Version 2016-07-17"
 
 ;; (define-key user-minor-mode-map "\C-_" 'noop)
 ;; (define-key user-minor-mode-map "\C-\\" 'noop)
-
-
