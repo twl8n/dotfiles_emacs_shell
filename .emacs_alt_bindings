@@ -1,0 +1,193 @@
+
+;; Alternate key bindings. I have changed many keys that are either confusing, or were something I didn't use
+;; and I needed a key for a feature I do use. Some of these bindings require functions from my .emacs (or
+;; .emacs_minimal).
+
+;;  Use new kdb syntax available as of 19.30
+;;  http://tiny-tools.sourceforge.net/emacs-keys.html
+
+;; There may be a way to call insert-pair interactively, but google can't find it with all the noise of
+;; "interactive" functions.  Map a key for things we commonly want to insert pairs of.
+(global-set-key (kbd "M-{") 'insert-pair) ;; default is 'backward-paragraph
+(global-set-key (kbd "M-[") 'insert-pair) ;; not a default key
+
+;; Replace C-w kill-region with a defun that only kills the active region, and does not kill to the mark when
+;; not active. Killing to the mark when no active selection is really irritating, and I'm fairly sure I never
+;; want to do that. Or very rarely. If I want to kill to the mark, C-x C-x (exchange-point-and-mark) then C-w will do it.
+
+(global-set-key (kbd "C-w") 'kill-active-region)  ;; default is kill-region
+
+;; Unbind the key to center text. Too close to M-C-s and I never use
+;; it. Disable.  In a lisp eval window, it didn't like the usual shortcuts for
+;; Meta, so I just inserted an escape char. (Why is this now commented out?)
+;; (define-key user-minor-mode-map "s" 'noop)
+
+;; Make the "delete" key in the cursor key (aka key pad) area perform a forward
+;; delete, backspace (the key above \) performs a backward delete. Sadly,
+;; [delete] and [kp-delete] can be different and can be aliased to something
+;; else, therefore you must re-bind them separately. (Apple in their bizarre
+;; wisdom have written "delete" on the backspace key.)
+
+;; Using the syntax (square brackets): [delete], [DEL], and [\d] did not work.
+
+;; Do not use "\d" because \d is some weird alias for whatever Emacs thinks is
+;; the local definition of the delete key. That local definition is often wrong.
+
+;; (define-key global-map "\d" 'delete-char)
+
+;; For Aquamacs and anything else, meta backtick switches Emacs frames ala
+;; meta-tab switching windows.
+(define-key global-map "\M-`" 'other-frame) ;; default 'tmm-menubar
+
+;; Set a couple of mouse related events in the fringe which is the one character wide column at the edge of
+;; the buffer window. drag region causes the highlight to follow the mouse action. set region copies the
+;; region. My settings seem to cause the region *not* to be automatically copied into the kill ring. I have to
+;; kill-region C-w or kill-ring-save M-w.
+(global-set-key (kbd "<left-fringe> <down-mouse-1>") 'mouse-drag-region)
+(global-set-key (kbd "<left-fringe> <drag-mouse-1>") 'mouse-set-region)
+
+
+(define-key global-map [delete] 'delete-char) ;; default delete-forward-char
+(define-key global-map [kp-delete] 'delete-char) ;; default delete-forward-char
+(define-key global-map [backspace] 'backward-delete-char) ;; default delete-backward-char
+
+;; The global-map is overridden by the minibuffer-local-map. When I
+;; fixed the stupid Mac delete, it broke backspace in the
+;; minibuffer. This fixes both keys for the minibuffer.
+
+(define-key minibuffer-local-map [delete] 'delete-char)
+(define-key minibuffer-local-map [kp-delete] 'delete-char)
+(define-key minibuffer-local-map [backspace] 'backward-delete-char)
+
+(define-key isearch-mode-map '[backspace] 'isearch-delete-char)
+
+;; This seems to work to disable these key bindings.
+(global-set-key "\C-[t" 'noop) ;; default is transpose-words (same as M-t)
+(global-set-key "\C-z" 'undo)  ;; default is suspend-frame
+
+;; Run describe-key-briefly, enter a key sequence, then read the minibuffer or *Messages* buffer
+;; to see how emacs views that key sequence. The following means you should refer to that key as (kbd "ESC <C-delete>")
+
+;; ESC <C-delete> (translated from ESC <C-kp-delete>) runs the command backward-kill-sexp
+
+;; This seems to work too, and uses the (kbd) macro which seems handy.
+
+(global-unset-key (kbd "M-k")) ;; default is kill-sentence
+(global-unset-key (kbd "C-_")) ;; default is undo
+(global-unset-key (kbd "C-/")) ;; default is undo
+
+;; I hit C-x m comppse-mail often when I really wanted M-x m, so disable C-x m.
+(global-unset-key (kbd "C-x m")) ;; default is compose-mail
+
+(global-unset-key (kbd "ESC <C-delete>")) ;; default is backward-kill-sexp
+(global-unset-key (kbd "ESC <C-backspace>")) ;; default is backward-kill-sexp
+
+;; Unbind M-delete in the form of C-[-delete which (at least on the
+;; Mac with standard Emacs) is different from M-delete. Both key
+;; bindings are a huge headache since I hit them fairly often by
+;; accident.
+(global-unset-key (kbd "M-")) ;; default is info
+
+;; Ditto C-x delete. This is also a bad one to hit accidentally.
+(global-unset-key "\C-x") ;; default is backward-kill-sentence
+
+;; Another bad key combination to hit by accident. The Lisp debugger
+;; wouldn't let me write this "\C-". Oddly, this is already remapped
+;; in the user-minor-mode-map which will take precedence over the
+;; global key binding.
+(global-unset-key [C-delete]) ;; default is kill-word
+
+;; replace all the upcase-whatever keys because I confuse them with backward-up-list, and it is easy to M-x upcase-region.
+(define-key user-minor-mode-map "\C-xu" 'backward-up-list) ;; default is undo
+(define-key user-minor-mode-map "\C-x\C-u" 'backward-up-list) ;; default is upcase-region
+
+;; This seems to work too, although it rebinds the key to my defun
+;; noop (as opposed to unbinding the key or binding to nil), and
+;; global-unset-key can't unbind what this does.
+(define-key global-map "\C-[t" 'noop) ;; default is transpose-words
+(define-key user-minor-mode-map  "\C-[t" 'noop) ;; default is transpose-words
+
+;; This can be typed as M-u or \C-[ u
+(define-key user-minor-mode-map "\C-[u" 'backward-up-list) ;; default is upcase-word
+(define-key user-minor-mode-map "\C-[\C-a" 'beginning-of-defun-one) ;; default is beginning-of-defun
+(define-key user-minor-mode-map "\C-[\C-e" 'end-of-defun-one) ;; default is end-of-defun
+
+(define-key user-minor-mode-map [delete] 'delete-char)
+(define-key user-minor-mode-map [kp-delete] 'delete-char)
+(define-key user-minor-mode-map [backspace] 'backward-delete-char)
+
+(define-key user-minor-mode-map "\C-[i" 'force-indent) ;; default is tab-to-tab-stop
+(define-key user-minor-mode-map "\C-x\C-d" 'dired) ;; default is list-directory
+(define-key user-minor-mode-map "\C-xt" 'font-lock-mode) ;; not defined by default
+
+;; Make isearch the default search. Nov 1 2012 is the day I finally saw the
+;; light and switch over my key bindings to this far more sensible approach.
+
+(define-key user-minor-mode-map "\C-s" 'isearch-forward) ;; default is isearch-forward
+(define-key user-minor-mode-map "\C-r" 'isearch-backward) ;; default is isearch-backward
+(define-key user-minor-mode-map "\C-[\C-s" 'search-forward) ;; default is isearch-forward-regexp
+(define-key user-minor-mode-map "\C-[\C-r" 'search-backward) ;; default is isearch-backward-regexp
+
+(define-key user-minor-mode-map "\C-x\C-n" 'next-error) ;; default is set-goal-column
+(define-key user-minor-mode-map "\C-x\C-p" 'previous-error) ;; default is mark-page
+(define-key user-minor-mode-map "\C-xc" 'compile) ;; no default
+(define-key user-minor-mode-map "\C-h" 'backward-delete-char) ;; default is help-command
+(define-key user-minor-mode-map "\C-[g" 'goto-line) ;; default is isearch-repeat-forward
+(define-key user-minor-mode-map "\C-xn" 'other-window) ;; default is Prefix Command
+(define-key user-minor-mode-map "\C-[q" 'query-replace) ;; default is fill-paragraph
+(define-key user-minor-mode-map "\C-xf" 'find-file) ;; default is set-fill-column
+
+;; C-x ESC ESC	repeat-complex-command
+;; C-x M-:		repeat-complex-command
+(define-key user-minor-mode-map "\C-[\C-[" 'repeat-complex-command) ;; no default
+
+(define-key user-minor-mode-map "\C-[r" 'replace-string) ;; default is move-to-window-line-top-bottom
+(define-key user-minor-mode-map "\C-[f" 'fill-paragraph) ;; default is forward-word
+(define-key user-minor-mode-map "\C-z" 'undo) ;; default is suspend-frame
+
+;; Setting keys to nil did not work. They still kept their default
+;; actions.  C-S-backspace is control-shift-backspace. I hit
+;; C-backspace accidentally which was confusing.
+
+
+(define-key user-minor-mode-map [C-S-backspace] 'delete-backward-char) ;; C-M-backspace no default
+(define-key user-minor-mode-map [C-backspace] 'delete-backward-char) ;; default is backward-kill-word
+(define-key user-minor-mode-map [M-backspace] 'delete-backward-char) ;; default is backward-kill-word
+(define-key user-minor-mode-map [insert] nil) ;; default is overwrite-mode
+(define-key user-minor-mode-map [insertchar] nil) ;; default is overwrite-mode
+
+;;  Remap keys using lowercase "L" (ell, l). I'm always hitting these instead of
+;;  C-l. Possibly C-xl might be ok. I guess l is for "lower", but it should be d for
+;;  "downcase". Standard binding for \C-l is to recenter-top-bottom.
+
+(define-key user-minor-mode-map "\C-[l" 'recenter) ;; default is downcase-word
+(define-key user-minor-mode-map "\C-x\C-l" 'recenter) ;; default is downcase-region
+(define-key user-minor-mode-map "\C-l" 'recenter) ;; default is recenter-top-bottom
+
+;; was scroll-down-command and of course was often confused with paste.
+(define-key user-minor-mode-map (kbd "M-v") 'yank) ;; default is scroll-down-command
+
+;; Jan 22 2014 I just noticed that C-v was still bound to the built-in scroll-up. C-v is paste in most apps,
+;; and scroll-up is broken so it makes 2x sense to update the key binding.
+(define-key user-minor-mode-map (kbd "C-v") 'yank) ;; default is scroll-up-command
+
+;; was capitalize-word and was often confused with copy.
+(define-key user-minor-mode-map (kbd "M-c") 'kill-ring-save) ;; default is capitalize-word
+
+;; Can't remap M-x because it execute-extended-command, which we kind of need to leave alone.
+
+;;  Use a new function for page up and page down.  This one will place the cursor on the
+;;  line where you started if you do the opposite. The default Emacs scroll-up and
+;;  scroll-down don't return the cursor to the same line. That's bad.  This still doesn't
+;;  work quite right if you hit the top or bottom of the buffer.  That could be fixed by
+;;  remembering how far the last scroll was, and reversing when necessary.
+
+(define-key user-minor-mode-map "\C-[a" 'backward-screen) ;; default is backward-sentence
+(define-key user-minor-mode-map "\C-[z" 'forward-screen) ;; default is zap-to-char
+(define-key user-minor-mode-map [(prior)]   'backward-screen) ;; default is scroll-down-command
+(define-key user-minor-mode-map [(next)]   'forward-screen) ;; default is scroll-up-command
+(define-key user-minor-mode-map "\C-[p" 'down-one) ;; no default
+(define-key user-minor-mode-map "\C-[n" 'up-one) ;; no default
+(define-key user-minor-mode-map "\C-p" 'down-one) ;; default is previous-line
+(define-key user-minor-mode-map "\C-n" 'up-one) ;; default is next-line
+(define-key user-minor-mode-map "\C-xp" 'scroll-style) ;; no default

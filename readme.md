@@ -4,7 +4,7 @@ Overview
 
 See the extensive comments inline.
 
-This single .emacs file works with both Apple Mac OS X and Linux. Unknown how it behaves on MS Windows.
+The file .emacs is a single config file works with both Apple Mac OS X and Linux. Unknown how it behaves on MS Windows.
 
 Unfortunately, to get multiplatform behavior, it kind of breaks with the typical convention of a single
 custom-set-variables and custom-set-faces. If you find the need to save something from Emacs customization
@@ -15,15 +15,31 @@ spurious custom-set-variables at the end of the file.
 Setting the background to nil works in both windowing and -nw emacs. Sadly, in most xterms with -nw
 :background "White" ends up as gray.
 
-forward-screen and backward-screen are not working as well as they could.
-
 Several of the delete keys that I kept hitting by accident have been unmapped.
 
 As far as I know, the key bindings work on Mac and Linux, in windowing and -nw modes (with xterm). It took a
 lot of work to get all that working.
 
-I use tramp heavily, and so autosaves have been moved to the local machine. 
+
+
+#### Description of files
+
+Standard Emacs keys bindings can be strange. Everyone I know modifies the keys to some extent. The standard
+key bindings are in the file default_emacs_bindings.txt or you can see them at any time in Emacs `M-x
+describe-bindings`.
+
+.emacs My dot emacs file
+
+.emacs_minimal A minimal .emacs with (very few?) no modified key bindings. Quite a few sensible settings have been modified. You might want to use this instead of my heavily modified .emacs. To use this as your .emacs simply copy this file to your home directory as .emacs.
+
+.emacs_alt_bindings All of the key bindings from my .emacs. Copy these into your personal .emacs as you see fit. 
+
+
+#### Tramp
+
+I use tramp heavily, and so autosaves have been disabled. When I was using them, I moved autosaves to the local machine. 
 Things which slow tramp down have been disabled, and I don't miss them. There are comments.
+
 With a slow connection you may find that ssh compressions speeds file saving in tramp. In your .ssh/config Host section:
 
 ```
