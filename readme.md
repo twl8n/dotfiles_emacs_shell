@@ -8,12 +8,19 @@ The file .emacs is a single config file works with both Apple Mac OS X and Linux
 
 Unfortunately, to get multiplatform behavior, it kind of breaks with the typical convention of a single
 custom-set-variables and custom-set-faces. If you find the need to save something from Emacs customization
-user interface , a new custom-set-variables will appear at the end of the .emacs. You need to manually copy any
-new stuff from the section at the end into the optional settings around line 1083. After that, delete the
-spurious custom-set-variables at the end of the file.
+user interface , a new custom-set-variables will appear at the end of the .emacs. You need to manually copy
+any new stuff from the section at the end into blocks of code `custom-set-variables` or `custom-set-faces`.
+After that, delete the spurious custom-set-variables at the end of the file.
 
 Setting the background to nil works in both windowing and -nw emacs. Sadly, in most xterms with -nw
-:background "White" ends up as gray.
+:background "White" ends up as gray. If you want to use Emacs in xterm, you probably want xterm-256color.
+
+Add this to your .bashrc or .zshrc:
+
+```
+# Use 256 colors for emacs -nw white.
+export TERM=xterm-256color
+```
 
 Several of the delete keys that I kept hitting by accident have been unmapped.
 

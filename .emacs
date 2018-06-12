@@ -1326,12 +1326,12 @@ Version 2016-07-17"
 ;; the :background. Many settings are the same. The fonts are the big os specific issue. Could separate those
 ;; out, although this works.
 
-         ;; Inconsolata has incomplete unicode glyphs, so I had to go back to Courier on the Mac.
-         ;; '(default ((t (:inherit nil :stipple
-         ;;                         nil :foreground "black" :inverse-video nil :box
-         ;;                         nil :strike-through nil :overline nil :underline
-         ;;                         nil :slant normal :weight normal :height 210 :width
-         ;;                         normal :foundry "apple" :family "Inconsolata"))))
+;; Inconsolata has incomplete unicode glyphs, so I had to go back to Courier on the Mac.
+;; '(default ((t (:inherit nil :stipple
+;;                         nil :foreground "black" :inverse-video nil :box
+;;                         nil :strike-through nil :overline nil :underline
+;;                         nil :slant normal :weight normal :height 210 :width
+;;                         normal :foundry "apple" :family "Inconsolata"))))
 
 (let ((bg_color "white"))
   (if (string= window-system nil)
