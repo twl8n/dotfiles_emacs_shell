@@ -561,23 +561,39 @@ Version 2016-07-17"
   (interactive)
   (term-send-raw-string "f"))
 
+;; In ansi-term the sub modes (minor modes?) are:
+;; term-mode-map line mode
+;; term-raw-map char mod
+
 (defun my-shell-setup ()
-  "Tom's term that really works"
+  "Tom's term that will really work after all the key bindings are fixed in both modes"
+  ;; Todo
+  ;; make C-c C-j toggle char mode and line mode
+  ;; make C-c C-k toggle char mode and line mode
 
   (local-set-key "\C-x f" 'xf)
+  (define-key term-raw-map "\C-xn" 'other-window) ;; default is Prefix Command
+  (define-key term-raw-map "\M-v" 'term-paste) ;; term-send-raw-meta
+  (define-key term-raw-map "\M-c" 'kill-ring-save) ;; term-send-raw-meta
 
+  ;; kill-line a defun. Must kill-line, then send raw C-k to the term as well
+  ;; or else the shell thinks the text is still there.
+  ;; (define-key term-raw-map "\C-k" 'kill-line) ;; term-send-raw
+  
+  (user-minor-mode 0)
+  (message "Done running my-shell-setup."))
+
+  ;; Probably crazy stuff, and that's why it is all commented out. Was inside my-shell-setup.
   ;; (define-key term-raw-map [(control ?a)] 'term-send-raw)
   ;; (define-key term-raw-map "\M-`" 'other-frame)
   ;; (define-key user-minor-mode-map "\C-x" 'term-send-raw)
   ;; (define-key user-minor-mode-map "\C-p" 'term-send-raw)
-  ;;   (suppress-keymap term-raw-map)
-  ;;(define-key global-map "\C-x b" 'term-send-eof)
+  ;; (suppress-keymap term-raw-map)
+  ;; (define-key global-map "\C-x b" 'term-send-eof)
   ;; (local-set-key KEY COMMAND)
-  ;;(local-set-key "\C-p"  'term-send-raw)  
+  ;; (local-set-key "\C-p"  'term-send-raw)  
   ;; (define-key term-raw-map "\C-c\C-d" 'term-send-raw)
   ;; (define-key term-mode-map "\C-c\C-d" 'term-send-raw)
-  (user-minor-mode 0)
-  (message "Done running my-shell-setup."))
 
 (add-hook 'term-mode-hook 'my-shell-setup)
 
@@ -593,10 +609,14 @@ Version 2016-07-17"
 ;; override all the goofy mode maps (like the HTML mode map).
 ;; (global-set-key [s-p] 'down-one)
 
+;; lowercase s as in s-c is Super which on the Mac is the option key. Unclear the difference
+;; between s-c and S-c. 
+
 (setq mac-option-key-is-meta nil)
 (setq mac-command-key-is-meta t)
 (setq mac-command-modifier 'meta)
-(setq mac-option-modifier nil)
+;; (setq mac-option-modifier nil)
+(setq mac-option-modifier 'super)
 (setq mac-function-modifier 'control)
 
 ;; re: gpg The daffy Mac and Aquamacs don't read .bash_profile and .bashrc
@@ -1326,12 +1346,12 @@ Version 2016-07-17"
 ;; the :background. Many settings are the same. The fonts are the big os specific issue. Could separate those
 ;; out, although this works.
 
-;; Inconsolata has incomplete unicode glyphs, so I had to go back to Courier on the Mac.
-;; '(default ((t (:inherit nil :stipple
-;;                         nil :foreground "black" :inverse-video nil :box
-;;                         nil :strike-through nil :overline nil :underline
-;;                         nil :slant normal :weight normal :height 210 :width
-;;                         normal :foundry "apple" :family "Inconsolata"))))
+         ;; Inconsolata has incomplete unicode glyphs, so I had to go back to Courier on the Mac.
+         ;; '(default ((t (:inherit nil :stipple
+         ;;                         nil :foreground "black" :inverse-video nil :box
+         ;;                         nil :strike-through nil :overline nil :underline
+         ;;                         nil :slant normal :weight normal :height 210 :width
+         ;;                         normal :foundry "apple" :family "Inconsolata"))))
 
 (let ((bg_color "white"))
   (if (string= window-system nil)
