@@ -8,6 +8,7 @@
 ;; cli environment. Also, font names aren't portable across platforms.  And other stuff.
 
 ;; Skip to "Core key bindings below" for key bindings.
+;; Also see "Weird Mac stuff" below.
 
 ;; overload set-file-acl which doesn't work. 
 (defun set-file-acl (file acl-str) t)
@@ -561,39 +562,23 @@ Version 2016-07-17"
   (interactive)
   (term-send-raw-string "f"))
 
-;; In ansi-term the sub modes (minor modes?) are:
-;; term-mode-map line mode
-;; term-raw-map char mod
-
 (defun my-shell-setup ()
-  "Tom's term that will really work after all the key bindings are fixed in both modes"
-  ;; Todo
-  ;; make C-c C-j toggle char mode and line mode
-  ;; make C-c C-k toggle char mode and line mode
+  "Tom's term that really works"
 
   (local-set-key "\C-x f" 'xf)
-  (define-key term-raw-map "\C-xn" 'other-window) ;; default is Prefix Command
-  (define-key term-raw-map "\M-v" 'term-paste) ;; term-send-raw-meta
-  (define-key term-raw-map "\M-c" 'kill-ring-save) ;; term-send-raw-meta
 
-  ;; kill-line a defun. Must kill-line, then send raw C-k to the term as well
-  ;; or else the shell thinks the text is still there.
-  ;; (define-key term-raw-map "\C-k" 'kill-line) ;; term-send-raw
-  
-  (user-minor-mode 0)
-  (message "Done running my-shell-setup."))
-
-  ;; Probably crazy stuff, and that's why it is all commented out. Was inside my-shell-setup.
   ;; (define-key term-raw-map [(control ?a)] 'term-send-raw)
   ;; (define-key term-raw-map "\M-`" 'other-frame)
   ;; (define-key user-minor-mode-map "\C-x" 'term-send-raw)
   ;; (define-key user-minor-mode-map "\C-p" 'term-send-raw)
-  ;; (suppress-keymap term-raw-map)
-  ;; (define-key global-map "\C-x b" 'term-send-eof)
+  ;;   (suppress-keymap term-raw-map)
+  ;;(define-key global-map "\C-x b" 'term-send-eof)
   ;; (local-set-key KEY COMMAND)
-  ;; (local-set-key "\C-p"  'term-send-raw)  
+  ;;(local-set-key "\C-p"  'term-send-raw)  
   ;; (define-key term-raw-map "\C-c\C-d" 'term-send-raw)
   ;; (define-key term-mode-map "\C-c\C-d" 'term-send-raw)
+  (user-minor-mode 0)
+  (message "Done running my-shell-setup."))
 
 (add-hook 'term-mode-hook 'my-shell-setup)
 
@@ -602,20 +587,16 @@ Version 2016-07-17"
 ;; http://www.emacswiki.org/emacs/CarbonEmacsPackage
 ;; http://xahlee.info/emacs/emacs_hyper_super_keys.html
 
-;; values: super, hyper, meta, control, nil
+;; values: 'super, 'hyper, 'meta, 'control, nil
 
 ;; I didn't try global-set-key. Maybe it would work. I switched to
 ;; define-key and the user-minor-mode-map so that my keybindings would
 ;; override all the goofy mode maps (like the HTML mode map).
 ;; (global-set-key [s-p] 'down-one)
 
-;; lowercase s as in s-c is Super which on the Mac is the option key. Unclear the difference
-;; between s-c and S-c. 
-
 (setq mac-option-key-is-meta nil)
 (setq mac-command-key-is-meta t)
 (setq mac-command-modifier 'meta)
-;; (setq mac-option-modifier nil)
 (setq mac-option-modifier 'super)
 (setq mac-function-modifier 'control)
 
@@ -935,8 +916,13 @@ Version 2016-07-17"
 
 ;; Core key bindings begin here.
 
+;; Super-a aka option-a. Requires that the Option key is modified to send Super. See "Weird Mac stuff" below.
+(define-key global-map [S-a] 'mark-whole-buffer) ;; was self-insert-command
+
 ;;  Use new kdb syntax available as of 19.30
 ;;  http://tiny-tools.sourceforge.net/emacs-keys.html
+
+(global-unset-key (kbd "C-8")) ;; was digit-argument
 
 ;; There may be a way to call insert-pair interactively, but google can't find it with all the noise of
 ;; "interactive" functions.  Map a key for things we commonly want to insert pairs of.
