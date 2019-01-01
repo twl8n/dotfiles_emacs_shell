@@ -915,12 +915,14 @@ Version 2016-07-17"
       (call-interactively 'kill-region)))
 
 ;; Core key bindings begin here.
+;; Use new kdb syntax available as of 19.30
+;; http://tiny-tools.sourceforge.net/emacs-keys.html
+
+;; option-d insert today's date. The original key binding delete word forward, but I never used that.
+(define-key user-minor-mode-map (kbd "s-d") '(lambda () "Insert today's date." (interactive) (insert (format-time-string "%Y-%m-%d"))))
 
 ;; Super-a aka option-a. Requires that the Option key is modified to send Super. See "Weird Mac stuff" below.
 (define-key global-map [S-a] 'mark-whole-buffer) ;; was self-insert-command
-
-;;  Use new kdb syntax available as of 19.30
-;;  http://tiny-tools.sourceforge.net/emacs-keys.html
 
 (global-unset-key (kbd "C-8")) ;; was digit-argument
 
