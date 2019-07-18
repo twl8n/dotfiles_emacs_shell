@@ -121,6 +121,18 @@
 (global-hl-line-mode)
 (set-face-background hl-line-face "#eeeeee")
 
+;; From cider-connect while using tramp:
+;; [nREPL] Establishing direct connection to tdev:38010 ...
+;; [nREPL] Direct connection to tdev:38010 failed
+;; nrepl-connect: [nREPL] Direct connection to tdev:38010 failed; try setting ‘nrepl-use-ssh-fallback-for-remote-hosts’ to t
+(setq nrepl-use-ssh-fallback-for-remote-hosts t)
+
+;; cider-clojure-cli-parameters
+;; The default doesn't work normally e.g. when you are in a project directory.
+;; Normally cider looks a the directory to determine choices. There is no customization for this behavior, AFAIKT.
+(setq cider-jack-in-default 'clojure-cli)
+(setq cider-clojure-cli-global-options "-A:dev")
+
 ;; Non-nil means a single space does not end a sentence.
 (setq sentence-end-double-space nil)
 
@@ -495,29 +507,41 @@ Version 2016-07-17"
 ;; files. However, seeing top level directories isn't a problem, so I'm not spending time to work out the
 ;; -regex solution (if there is one).
 
+;; find . \( -path './.*' -o -path './tmp' -o -path './target' -o -path './images' -o -path './solr*' -o -path './logs*' \) -prune -o -ls
+
+;; Make skipping dirs faster by pruning them (vs descending into them, but ignoring all the files).
+;; We have a () expression that is an arg to -prune, and then we need a -o between -prune and -ls.
+
+;; Ignore dirs, no parens, use -not prefix:  -not path './foo' -not -path './bar/*' -ls
+;; Prune dirs, paren expression, use -o infix:  \( path './foo' -o -path './bar/*' \) -prune -o -ls
+
+;; If you try this and a directory is not being ignored/pruned, make sure -prune is outside the long
+;; expression of paths to prune.
+
+;; (mapconcat 'identity '("" "home" "alex " "elisp" "erc") "/")
+
 (defun mfd ()
   "find-dired starting at the current directory. mfd for my-find-dired."
   (interactive)
-  (find-dired "." "-not -path './.*' -not -path './tmp/*' -not -path './target/*' -not -path './images/*'")
-  (rename-buffer 
-   (concat 
-    "*find-" 
-    (progn
-      (setq foo (replace-regexp-in-string "/$" "" default-directory))
-      (string-match ".*/\\(.*\\)$" foo)
-      (match-string 1 foo)))))
-
-(defun mfx ()
-  "find-dired starting at the current directory. mfd for my-find-dired."
-  (interactive)
-  (find-dired "." "-not -path './.*' -not -path './tmp/*' -not -path './target/*' -not -path './images/*' -not -path './solr-home/*'")
-  (rename-buffer 
-   (concat 
-    "*find-" 
-    (progn
-      (setq foo (replace-regexp-in-string "/$" "" default-directory))
-      (string-match ".*/\\(.*\\)$" foo)
-      (match-string 1 foo)))))
+  (setq find-ls-option '("-prune -o -ls" . "-dilsb"))  
+  (let '(path-exp
+         (concat "-path " (mapconcat 'identity ["'./.*'" 
+                                                "'./tmp'" 
+                                                "'./target'" 
+                                                "'./images'" 
+                                                "'./solr-home/*'" 
+                                                "'./solr*'" 
+                                                "'./logs*'" 
+                                                "'./ecs/*'"]  " -o -path ")
+                 " -prune"))
+    (find-dired "." path-exp)
+    (rename-buffer 
+     (concat 
+      "*find-" 
+      (progn
+        (setq foo (replace-regexp-in-string "/$" "" default-directory))
+        (string-match ".*/\\(.*\\)$" foo)
+        (match-string 1 foo))))))
 
 
 ;; Align comments within a region. Works well for SQL comments at the ends of lines in create table statements.
@@ -625,9 +649,14 @@ Version 2016-07-17"
 ;; You must open a shell and determine the correct path to gpg
 ;; manually, then put that path in the line below.
 
-(setq exec-path (append exec-path '(concat (getenv "HOME") "/bin")))
-(setq exec-path (append exec-path '("/usr/local/bin")))
-(setq exec-path (append exec-path '("/opt/pkg/bin")))
+
+(setq exec-path (append
+                 (list
+                  "/usr/local/bin"
+                  "/opt/pkg/bin"
+                  (concat (getenv "HOME") "/bin"))
+                 exec-path))
+
 
 ;; New emacs (or Aquamacs?) suddenly defaulted to bar instead of box. 
 ;; http://www.gnu.org/software/emacs/manual/html_node/elisp/Cursor-Parameters.html
@@ -1403,3 +1432,37 @@ Version 2016-07-17"
 (autoload 'js2-mode "js2" nil t)
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 
+;; (custom-set-variables
+;;  ;; custom-set-variables was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(cua-mode nil nil (cua-base))
+;;  '(epa-file-select-keys 2)
+;;  '(ess-S-assign "_")
+;;  '(ido-everywhere t)
+;;  '(ido-show-dot-for-dired t)
+;;  '(line-move-visual nil)
+;;  '(mode-line-format
+;;    (quote
+;;     ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
+;;      (vc-mode vc-mode)
+;;      "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
+;;  '(package-selected-packages
+;;    (quote
+;;     (projectile go-mode cider-eval-sexp-fu cider browse-kill-ring)))
+;;  '(php-template-compatibility nil)
+;;  '(term-bind-key-alist
+;;    (quote
+;;     (("C-c C-x b" . switch-to-buffer)
+;;      ("C-c M-x" . execute-extended-command)
+;;      ("C-c C-c" . term-interrupt-subjob)
+;;      ("M-`" . other-frame)
+;;      ("C-m" . term-send-raw))))
+;;  '(term-unbind-key-list (quote ("C-c"))))
+;; (custom-set-faces
+;;  ;; custom-set-faces was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 180 :width normal :foundry "nil" :family "Menlo")))))
