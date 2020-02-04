@@ -7,7 +7,7 @@
 ;; Note that I've moved custom settings inside an if that tests for operating system and type of windowing or
 ;; cli environment. Also, font names aren't portable across platforms.  And other stuff.
 
-;; Skip to "Core key bindings below" for key bindings.
+;; Skip to "*** Core key bindings below" for key bindings.
 ;; Also see "Weird Mac stuff" below.
 
 ;; overload set-file-acl which doesn't work. 
@@ -56,7 +56,7 @@
 
 ;; (custom-set-faces '(default ((t (:background nil)))))
 ;; (face-attribute 'default :background )
-;; "unspecified-bg" *************************************************
+;; "unspecified-bg" 
 
 ;; This works and seems to be the same as custom-set-faces :background nil. 
 ;; (set-face-attribute 'default nil :background "unspecified-bg")
@@ -145,6 +145,8 @@
 ;; Force isearch to be case insensitive. Normally it is, but in find-dired is oddly becomes case-sensitive
 ;; which is irritating when it is case-insensitive everywhere else.
 (setq isearch-case-fold-search t)
+(setq case-fold-search t)
+
 
 (setq standard-indent 4)
 (setq nxml-child-indent standard-indent)
@@ -333,6 +335,13 @@
 ;; (setq tramp-default-method "scpx")
 (setq tramp-default-method "rsync")
 
+;; 2020-01-16 Something bad happened with new ubuntu on ec2. /bin/sh -> /bin/dash which doesn't seem to read
+;; .profile .bashrc .zshenv or anything else and insists on munging the path. This helps, but heaven only
+;; knows where it is getting this path.
+;; https://stackoverflow.com/questions/26630640/tramp-ignores-tramp-remote-path
+;; https://github.com/clojure-emacs/cider/issues/1854
+;; (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+
 ;; Disable auto save for all buffers. I manually disable auto-save when I'm using tramp or
 ;; sshfs and fuse. Might be better to just eval this by hand rather than have it
 ;; here. However, I'm typically a compusive saver so I probably won't notice if it
@@ -515,10 +524,15 @@ Version 2016-07-17"
 ;; Ignore dirs, no parens, use -not prefix:  -not path './foo' -not -path './bar/*' -ls
 ;; Prune dirs, paren expression, use -o infix:  \( path './foo' -o -path './bar/*' \) -prune -o -ls
 
-;; If you try this and a directory is not being ignored/pruned, make sure -prune is outside the long
-;; expression of paths to prune.
+;; If you modify this, and a directory is not being ignored/pruned, make sure -prune is outside the long
+;; expression of paths to prune. Remember that Emacs wraps path-exp in parens, and that find-ls-option is a suffix. 
 
 ;; (mapconcat 'identity '("" "home" "alex " "elisp" "erc") "/")
+
+;; This doesn't work because dired-mode uses a regex to find the file name, and that regex is expecting
+;; a preceding date in a certain format. -printf may not be able to make dates in that format, which
+;; is the same as ls -l.
+;; -printf \"%M\t%s\t%Tb %Td %TY\t%h/%f\n\"
 
 (defun mfd ()
   "find-dired starting at the current directory. mfd for my-find-dired."
@@ -649,14 +663,9 @@ Version 2016-07-17"
 ;; You must open a shell and determine the correct path to gpg
 ;; manually, then put that path in the line below.
 
-
-(setq exec-path (append
-                 (list
-                  "/usr/local/bin"
-                  "/opt/pkg/bin"
-                  (concat (getenv "HOME") "/bin"))
-                 exec-path))
-
+(setq exec-path (append exec-path '(concat (getenv "HOME") "/bin")))
+(setq exec-path (append exec-path '("/usr/local/bin")))
+(setq exec-path (append exec-path '("/opt/pkg/bin")))
 
 ;; New emacs (or Aquamacs?) suddenly defaulted to bar instead of box. 
 ;; http://www.gnu.org/software/emacs/manual/html_node/elisp/Cursor-Parameters.html
@@ -758,10 +767,11 @@ Version 2016-07-17"
 (setq inhibit-startup-message t)
 
 ;; Not sure what these skip, but I doubt I want to see the splash or startup screen.
-;; Non-nil inhibits the startup screen.  It also inhibits display of the initial message
-;; in the `*scratch*' buffer.
+;; Non-nil inhibits the startup screen.  
+;; Get rid of the scratch startup message.
 (setq inhibit-startup-screen t)
 (setq inhibit-splash-screen t)
+(setq initial-scratch-message "")
 
 ;; http://www.emacswiki.org/emacs/CuaMode
 ;; http://www.gnu.org/software/emacs/manual/html_node/emacs/CUA-Bindings.html
@@ -796,8 +806,11 @@ Version 2016-07-17"
 ;; Enable ido-mode for fancy completion on buffer switch and file
 ;; open. We don't seem to need the require 'ido in recent versions of
 ;; Emacs.  http://www.emacswiki.org/cgi-bin/wiki/InteractivelyDoThings
+;; (ido-mode "files")
+;; (ido-mode "buffers")
+;; (ido-mode nil) ;; or any non-positive arg
 (condition-case err
-    (ido-mode t)
+    (ido-mode "buffers")
   (error "Cannot enable ido mode"))
 
 ;; Tell emacs that read-only files whether write protected on disk or
@@ -943,15 +956,25 @@ Version 2016-07-17"
   (if (region-active-p)
       (call-interactively 'kill-region)))
 
-;; Core key bindings begin here.
+;; *** Core key bindings begin here.
 ;; Use new kdb syntax available as of 19.30
 ;; http://tiny-tools.sourceforge.net/emacs-keys.html
+
+;; 2019-08-10 I'm tired of hitting C-x C-b when I meant C-x b
+;; It is bound to C-x C-b, <menu-bar> <buffer> <list-all-buffers>.
+(define-key user-minor-mode-map "\C-x\C-b" 'ido-switch-buffer) ;; was list-buffers
+(define-key user-minor-mode-map "\C-xb" 'ido-switch-buffer)
+(define-key user-minor-mode-map "\C-xlb" 'list-buffers) ;; lb does the old binding list-buffers
+
+
+(define-key global-map [S-a] 'mark-whole-buffer) ;; was self-insert-command
+
 
 ;; option-d insert today's date. The original key binding delete word forward, but I never used that.
 (define-key user-minor-mode-map (kbd "s-d") '(lambda () "Insert today's date." (interactive) (insert (format-time-string "%Y-%m-%d"))))
 
 ;; Super-a aka option-a. Requires that the Option key is modified to send Super. See "Weird Mac stuff" below.
-(define-key global-map [S-a] 'mark-whole-buffer) ;; was self-insert-command
+(define-key user-minor-mode-map [C-x C-b] 'ido-switch-buffer) ;; was list-buffers
 
 (global-unset-key (kbd "C-8")) ;; was digit-argument
 
@@ -1071,11 +1094,12 @@ Version 2016-07-17"
 
 ;; Make isearch the default search. Nov 1 2012 is the day I finally saw the
 ;; light and switch over my key bindings to this far more sensible approach.
+;; 2019-11-19 After years of failing with isearch, upgrade to nonincremental search.
 
 (define-key user-minor-mode-map "\C-s" 'isearch-forward) ;; default is isearch-forward
 (define-key user-minor-mode-map "\C-r" 'isearch-backward) ;; default is isearch-backward
-(define-key user-minor-mode-map "\C-[\C-s" 'search-forward) ;; default is isearch-forward-regexp
-(define-key user-minor-mode-map "\C-[\C-r" 'search-backward) ;; default is isearch-backward-regexp
+(define-key user-minor-mode-map "\C-[\C-s" 'nonincremental-search-forward) ;; default is isearch-forward-regexp
+(define-key user-minor-mode-map "\C-[\C-r" 'nonincremental-search-backward) ;; default is isearch-backward-regexp
 
 (define-key user-minor-mode-map "\C-x\C-n" 'next-error) ;; default is set-goal-column
 (define-key user-minor-mode-map "\C-x\C-p" 'previous-error) ;; default is mark-page
@@ -1086,8 +1110,8 @@ Version 2016-07-17"
 (define-key user-minor-mode-map "\C-[q" 'query-replace) ;; default is fill-paragraph
 (define-key user-minor-mode-map "\C-xf" 'find-file) ;; default is set-fill-column
 
-;; C-x ESC ESC	repeat-complex-command
-;; C-x M-:		repeat-complex-command
+;; C-x ESC ESC repeat-complex-command
+;; C-x M-:     repeat-complex-command
 (define-key user-minor-mode-map "\C-[\C-[" 'repeat-complex-command) ;; no default
 
 (define-key user-minor-mode-map "\C-[r" 'replace-string) ;; default is move-to-window-line-top-bottom
@@ -1343,10 +1367,13 @@ Version 2016-07-17"
         ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
          (vc-mode vc-mode)
          "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
+     '(package-selected-packages
+       (quote
+        (yaml-mode projectile go-mode cider-eval-sexp-fu cider)))
+     '(php-template-compatibility nil)     
 
      ;; term-bind-key-alist and term-unbind-key-list only apply to
      ;; multi-term.el.
-
      '(term-bind-key-alist
        (quote (
 	       ("C-c C-x b" . switch-to-buffer)
@@ -1365,12 +1392,18 @@ Version 2016-07-17"
 ;; the :background. Many settings are the same. The fonts are the big os specific issue. Could separate those
 ;; out, although this works.
 
-         ;; Inconsolata has incomplete unicode glyphs, so I had to go back to Courier on the Mac.
-         ;; '(default ((t (:inherit nil :stipple
-         ;;                         nil :foreground "black" :inverse-video nil :box
-         ;;                         nil :strike-through nil :overline nil :underline
-         ;;                         nil :slant normal :weight normal :height 210 :width
-         ;;                         normal :foundry "apple" :family "Inconsolata"))))
+;; Inconsolata has incomplete unicode glyphs, so I had to go back to Courier on the Mac.
+;; '(default ((t (:inherit nil :stipple
+;;                         nil :foreground "black" :inverse-video nil :box
+;;                         nil :strike-through nil :overline nil :underline
+;;                         nil :slant normal :weight normal :height 210 :width
+;;                         normal :foundry "apple" :family "Inconsolata"))))
+
+;; window-system nil is -nw at the linux command line, aka no X windows.
+;; The background color must be nil due to Emacs/terminfo etc being confused that white is actually a shade of gray.
+
+(message (format "window-system is %s" window-system))
+(message (format "system-type is %s" system-type))
 
 (let ((bg_color "white"))
   (if (string= window-system nil)
@@ -1432,37 +1465,3 @@ Version 2016-07-17"
 (autoload 'js2-mode "js2" nil t)
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 
-;; (custom-set-variables
-;;  ;; custom-set-variables was added by Custom.
-;;  ;; If you edit it by hand, you could mess it up, so be careful.
-;;  ;; Your init file should contain only one such instance.
-;;  ;; If there is more than one, they won't work right.
-;;  '(cua-mode nil nil (cua-base))
-;;  '(epa-file-select-keys 2)
-;;  '(ess-S-assign "_")
-;;  '(ido-everywhere t)
-;;  '(ido-show-dot-for-dired t)
-;;  '(line-move-visual nil)
-;;  '(mode-line-format
-;;    (quote
-;;     ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
-;;      (vc-mode vc-mode)
-;;      "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
-;;  '(package-selected-packages
-;;    (quote
-;;     (projectile go-mode cider-eval-sexp-fu cider browse-kill-ring)))
-;;  '(php-template-compatibility nil)
-;;  '(term-bind-key-alist
-;;    (quote
-;;     (("C-c C-x b" . switch-to-buffer)
-;;      ("C-c M-x" . execute-extended-command)
-;;      ("C-c C-c" . term-interrupt-subjob)
-;;      ("M-`" . other-frame)
-;;      ("C-m" . term-send-raw))))
-;;  '(term-unbind-key-list (quote ("C-c"))))
-;; (custom-set-faces
-;;  ;; custom-set-faces was added by Custom.
-;;  ;; If you edit it by hand, you could mess it up, so be careful.
-;;  ;; Your init file should contain only one such instance.
-;;  ;; If there is more than one, they won't work right.
-;;  '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 180 :width normal :foundry "nil" :family "Menlo")))))
