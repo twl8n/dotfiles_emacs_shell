@@ -121,6 +121,12 @@
 (global-hl-line-mode)
 (set-face-background hl-line-face "#eeeeee")
 
+
+;; https://emacs.stackexchange.com/questions/4160/how-can-i-configure-incremental-search-to-put-my-cursor-at-the-start-of-whitespa
+;; Disable lax whitespace globbing. The default is that isearch matches all whitespace when you search for a single space.
+;; Irritating. Disable that.
+(setq search-whitespace-regexp nil)
+
 ;; From cider-connect while using tramp:
 ;; [nREPL] Establishing direct connection to tdev:38010 ...
 ;; [nREPL] Direct connection to tdev:38010 failed
@@ -132,6 +138,7 @@
 ;; Normally cider looks a the directory to determine choices. There is no customization for this behavior, AFAIKT.
 (setq cider-jack-in-default 'clojure-cli)
 (setq cider-clojure-cli-global-options "-A:dev")
+(setq cider-repl-use-pretty-printing 1)
 
 ;; Non-nil means a single space does not end a sentence.
 (setq sentence-end-double-space nil)
@@ -146,7 +153,6 @@
 ;; which is irritating when it is case-insensitive everywhere else.
 (setq isearch-case-fold-search t)
 (setq case-fold-search t)
-
 
 (setq standard-indent 4)
 (setq nxml-child-indent standard-indent)
@@ -334,13 +340,6 @@
 
 ;; (setq tramp-default-method "scpx")
 (setq tramp-default-method "rsync")
-
-;; 2020-01-16 Something bad happened with new ubuntu on ec2. /bin/sh -> /bin/dash which doesn't seem to read
-;; .profile .bashrc .zshenv or anything else and insists on munging the path. This helps, but heaven only
-;; knows where it is getting this path.
-;; https://stackoverflow.com/questions/26630640/tramp-ignores-tramp-remote-path
-;; https://github.com/clojure-emacs/cider/issues/1854
-;; (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
 
 ;; Disable auto save for all buffers. I manually disable auto-save when I'm using tramp or
 ;; sshfs and fuse. Might be better to just eval this by hand rather than have it
@@ -767,7 +766,7 @@ Version 2016-07-17"
 (setq inhibit-startup-message t)
 
 ;; Not sure what these skip, but I doubt I want to see the splash or startup screen.
-;; Non-nil inhibits the startup screen.  
+;; Non-nil inhibits the startup screen.
 ;; Get rid of the scratch startup message.
 (setq inhibit-startup-screen t)
 (setq inhibit-splash-screen t)
@@ -1094,12 +1093,13 @@ Version 2016-07-17"
 
 ;; Make isearch the default search. Nov 1 2012 is the day I finally saw the
 ;; light and switch over my key bindings to this far more sensible approach.
-;; 2019-11-19 After years of failing with isearch, upgrade to nonincremental search.
 
 (define-key user-minor-mode-map "\C-s" 'isearch-forward) ;; default is isearch-forward
 (define-key user-minor-mode-map "\C-r" 'isearch-backward) ;; default is isearch-backward
 (define-key user-minor-mode-map "\C-[\C-s" 'nonincremental-search-forward) ;; default is isearch-forward-regexp
 (define-key user-minor-mode-map "\C-[\C-r" 'nonincremental-search-backward) ;; default is isearch-backward-regexp
+(define-key user-minor-mode-map "\C-[\C-s" 'search-forward) ;; default is isearch-forward-regexp
+(define-key user-minor-mode-map "\C-[\C-r" 'search-backward) ;; default is isearch-backward-regexp
 
 (define-key user-minor-mode-map "\C-x\C-n" 'next-error) ;; default is set-goal-column
 (define-key user-minor-mode-map "\C-x\C-p" 'previous-error) ;; default is mark-page
@@ -1110,8 +1110,8 @@ Version 2016-07-17"
 (define-key user-minor-mode-map "\C-[q" 'query-replace) ;; default is fill-paragraph
 (define-key user-minor-mode-map "\C-xf" 'find-file) ;; default is set-fill-column
 
-;; C-x ESC ESC repeat-complex-command
-;; C-x M-:     repeat-complex-command
+;; C-x ESC ESC	repeat-complex-command
+;; C-x M-:		repeat-complex-command
 (define-key user-minor-mode-map "\C-[\C-[" 'repeat-complex-command) ;; no default
 
 (define-key user-minor-mode-map "\C-[r" 'replace-string) ;; default is move-to-window-line-top-bottom
@@ -1370,10 +1370,11 @@ Version 2016-07-17"
      '(package-selected-packages
        (quote
         (yaml-mode projectile go-mode cider-eval-sexp-fu cider)))
-     '(php-template-compatibility nil)     
+     '(php-template-compatibility nil)
 
      ;; term-bind-key-alist and term-unbind-key-list only apply to
      ;; multi-term.el.
+
      '(term-bind-key-alist
        (quote (
 	       ("C-c C-x b" . switch-to-buffer)
@@ -1464,4 +1465,5 @@ Version 2016-07-17"
 
 (autoload 'js2-mode "js2" nil t)
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+
 
