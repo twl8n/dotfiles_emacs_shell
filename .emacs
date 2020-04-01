@@ -93,6 +93,13 @@
      (message "safe-require warning: %s" (error-message-string err))
      nil )))
 
+(if (safe-require 'emms-setup)
+    (progn
+      (emms-all)
+      (emms-default-players)
+      (setq emms-source-file-default-directory "~twl/Music/"))
+  (message "emms not loaded"))
+
 ;; None of this package stuff works due to multiple requirements. Maybe it isn't too hard, but I gave up on
 ;; the second error. There are no docs for installing use-package, and no package for it in Melpa. Instead,
 ;; just add this one line to enable flycheck, which was the whole point of use-package.
@@ -257,6 +264,9 @@
              '("melpa-stable" . "http://stable.melpa.org/packages/") t)
 (package-initialize)
 
+
+
+
 ;; added jun 24 2015
 ;; https://github.com/mblakele/xquery-mode
 ;; xquery mode
@@ -338,8 +348,9 @@
 ;; 2018-05-11 On a slow connection, rsync is faster saving text files back to the server. I presume this is due
 ;; to rsync being able to sent partial updates. Speed is the same as scpx on the initial load of the file from server.
 
-;; (setq tramp-default-method "scpx")
-(setq tramp-default-method "rsync")
+(setq tramp-default-method "scpx")
+;; Something broke during an upgrade to OSX and/or Emacs. rsync stopped working.
+;; (setq tramp-default-method "rsync")
 
 ;; Disable auto save for all buffers. I manually disable auto-save when I'm using tramp or
 ;; sshfs and fuse. Might be better to just eval this by hand rather than have it
@@ -662,8 +673,10 @@ Version 2016-07-17"
 ;; You must open a shell and determine the correct path to gpg
 ;; manually, then put that path in the line below.
 
-(setq exec-path (append exec-path '(concat (getenv "HOME") "/bin")))
+;; (setq exec-path '())
+(setq exec-path (append exec-path (list (concat (getenv "HOME") "/bin"))))
 (setq exec-path (append exec-path '("/usr/local/bin")))
+(setq exec-path (append exec-path '("/home/ubuntu/bin")))
 (setq exec-path (append exec-path '("/opt/pkg/bin")))
 
 ;; New emacs (or Aquamacs?) suddenly defaulted to bar instead of box. 
@@ -1106,7 +1119,11 @@ Version 2016-07-17"
 (define-key user-minor-mode-map "\C-xc" 'compile) ;; no default
 (define-key user-minor-mode-map "\C-h" 'backward-delete-char) ;; default is help-command
 (define-key user-minor-mode-map "\C-[g" 'goto-line) ;; default is isearch-repeat-forward
-(define-key user-minor-mode-map "\C-xn" 'other-window) ;; default is Prefix Command
+
+;; 2020-04-01 Both these keys used to be bound to 'other-window, but is not ideal with more than 2 open buffers. 
+(define-key user-minor-mode-map "\C-xn" 'next-multiframe-window) ;; default is Prefix Command
+(define-key user-minor-mode-map "\C-xo" 'previous-multiframe-window)
+
 (define-key user-minor-mode-map "\C-[q" 'query-replace) ;; default is fill-paragraph
 (define-key user-minor-mode-map "\C-xf" 'find-file) ;; default is set-fill-column
 
@@ -1356,8 +1373,9 @@ Version 2016-07-17"
     (custom-set-variables
      '(cua-mode nil nil (cua-base))
      '(ess-S-assign "_")
-     '(ido-everywhere t)
-     '(ido-show-dot-for-dired t)
+     ;; 2020-04-01 I'm finally tired of ido munging paths when I make a typo opening a file.
+     ;; '(ido-everywhere t)
+     ;; '(ido-show-dot-for-dired t)
      '(line-move-visual nil)
      '(php-template-compatibility nil)
      ;; Always use symmetric for .gpg files
@@ -1369,7 +1387,7 @@ Version 2016-07-17"
          "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
      '(package-selected-packages
        (quote
-        (yaml-mode projectile go-mode cider-eval-sexp-fu cider)))
+        (emms yaml-mode projectile go-mode cider-eval-sexp-fu cider)))
      '(php-template-compatibility nil)
 
      ;; term-bind-key-alist and term-unbind-key-list only apply to
