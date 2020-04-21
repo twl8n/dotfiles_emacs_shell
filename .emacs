@@ -815,6 +815,8 @@ Version 2016-07-17"
 ;; http://www.gnu.org/software/emacs/manual/html_node/emacs/Cut_002fPaste-Other-App.html
 (setq x-select-enable-clipboard t)  
 
+;; 2020-04-21 Disable ido-mode which has become a nuisance when opening files and dirs
+(ido-mode nil)
 ;; Enable ido-mode for fancy completion on buffer switch and file
 ;; open. We don't seem to need the require 'ido in recent versions of
 ;; Emacs.  http://www.emacswiki.org/cgi-bin/wiki/InteractivelyDoThings
