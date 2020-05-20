@@ -817,6 +817,7 @@ Version 2016-07-17"
 
 ;; 2020-04-21 Disable ido-mode which has become a nuisance when opening files and dirs
 (ido-mode nil)
+
 ;; Enable ido-mode for fancy completion on buffer switch and file
 ;; open. We don't seem to need the require 'ido in recent versions of
 ;; Emacs.  http://www.emacswiki.org/cgi-bin/wiki/InteractivelyDoThings
@@ -989,6 +990,10 @@ Version 2016-07-17"
 
 ;; Super-a aka option-a. Requires that the Option key is modified to send Super. See "Weird Mac stuff" below.
 (define-key user-minor-mode-map [C-x C-b] 'ido-switch-buffer) ;; was list-buffers
+
+;; <S-delete> (translated from <S-kp-delete>) runs the command kill-region
+;; Don't use (global-unset-key [S-delete]) because that simply changes is from S-delete to delete.
+(define-key user-minor-mode-map  [S-delete] 'noop)
 
 (global-unset-key (kbd "C-8")) ;; was digit-argument
 
