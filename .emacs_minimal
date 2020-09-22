@@ -174,7 +174,7 @@
 ;;   (setq fill-column 120))
 ;; (add-hook 'change-log-mode-hook 'my-change-log-mode-hook)
 
-; If 120 is too long, and 80 seems too short then try 100.
+                                        ; If 120 is too long, and 80 seems too short then try 100.
 
 (setq-default fill-column 110)
 
@@ -410,10 +410,10 @@ Version 2016-07-17"
 ;; Name function my- in a valiant attempt not to conflict with functions beginning align-
 
 (defun my-align-second (beginning end) 
- "align on second word"
+  "align on second word"
   (interactive "*r")
   (align-regexp beginning end  "\\([a-z_]+\\)\\(\\s-*\\)\\([a-z_]+\\)" 2 1 nil)
-)
+  )
 
 ;; alias my-align-second to the shorter, more unique mas
 (defalias 'mas 'my-align-second)
@@ -422,7 +422,7 @@ Version 2016-07-17"
 ;; term-raw-map. Line mode is term-mode-map. One way to learn about active maps: C-u M-x
 ;; is more powerful than plain old M-x. Dunno why.
 
-; C-u M-x apropos-variable RET -mode-map$ RET
+                                        ; C-u M-x apropos-variable RET -mode-map$ RET
 
 ;; C-@ .. C-b term-send-raw
 ;; C-d .. C-w	term-send-raw
@@ -509,7 +509,7 @@ Version 2016-07-17"
 ;; http://www.gnu.org/software/emacs/manual/html_node/elisp/Cursor-Parameters.html
 (setq-default cursor-type 'box) 
 
-; Set cursor color
+                                        ; Set cursor color
 (set-cursor-color "#660099")
 
 ;; enable/disable menu bar and tool bar. Oddly, it is necessary to use
@@ -517,7 +517,7 @@ Version 2016-07-17"
 ;; docs say.
 ;; (tool-bar-mode 0)
 
-; (menu-bar-mode 0)
+                                        ; (menu-bar-mode 0)
 
 ;; Show which function the cursor is in.
 (which-function-mode t)
@@ -582,7 +582,7 @@ Version 2016-07-17"
 
 (safe-require 'multi-term)
 
-; Replace $RSENSE_HOME with the directory where RSense was installed in full path
+                                        ; Replace $RSENSE_HOME with the directory where RSense was installed in full path
 ;; Example for UNIX-like systems
 ;; (setq rsense-home "/home/tomo/opt/rsense-0.2")
 ;; or
@@ -686,10 +686,10 @@ Version 2016-07-17"
 (setq ispell-program-name "/usr/pkg/bin/aspell")
 
 ;; Uncomment to automatically load ispell at startup.
-;(load "ispell")
+                                        ;(load "ispell")
 
 ;; Uncomment if you like lots of backup versions
-;(setq version-control t)
+                                        ;(setq version-control t)
 
 ;; Stop emacs from automatically converting end of line characters.
 ;; Auto converting Windows or Mac eol to Linux eol can be really, really
@@ -980,23 +980,34 @@ Version 2016-07-17"
     (kill-buffer buf)))
 
 
+;;
+;; Operating system dependencies. 
+;;
+
 ;; This error catching block exists because some settings are not portable across platforms and I don't like
 ;; fatal errors in this file. Emacs saving customizations doesn't understand custom-set-variables when it is
-;; inside another block, so if you save you'll have to manually copy the new setting here.
+;; inside another block, so if you save you'll have to manually copy the new settings here.
 
 (condition-case err
     (custom-set-variables
      '(cua-mode nil nil (cua-base))
      '(ess-S-assign "_")
-     '(ido-everywhere t)
-     '(ido-show-dot-for-dired t)
+     ;; 2020-04-01 I'm finally tired of ido munging paths when I make a typo opening a file.
+     ;; '(ido-everywhere t)
+     ;; '(ido-show-dot-for-dired t)
      '(line-move-visual nil)
      '(php-template-compatibility nil)
+     ;; Always use symmetric for .gpg files
+     '(epa-file-select-keys 2)
+     ;; the format of the mode like aka status at the bottom of the Emacs window.
      '(mode-line-format
        (quote
         ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
          (vc-mode vc-mode)
          "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
+     '(package-selected-packages
+       (quote
+        (emms yaml-mode projectile go-mode cider-eval-sexp-fu cider)))
 
      ;; term-bind-key-alist and term-unbind-key-list only apply to
      ;; multi-term.el.
@@ -1016,12 +1027,26 @@ Version 2016-07-17"
      )
   (error ))
 
-;; Operating system dependencies. 
-
 ;; We have two possible :background colors. The same two colors apply to both operating systems. Each os has a
 ;; different custom-set-faces. After setting the os specific customizations, both use the same command to set
 ;; the :background. Many settings are the same. The fonts are the big os specific issue. Could separate those
 ;; out, although this works.
+
+;; Inconsolata has incomplete unicode glyphs, so I had to go back to Courier on the Mac.
+;; '(default ((t (:inherit nil :stipple
+;;                         nil :foreground "black" :inverse-video nil :box
+;;                         nil :strike-through nil :overline nil :underline
+;;                         nil :slant normal :weight normal :height 210 :width
+;;                         normal :foundry "apple" :family "Inconsolata"))))
+
+;; window-system nil is -nw at the linux command line, aka no X windows.
+;; The background color must be nil due to Emacs/terminfo etc being confused that white is actually a shade of gray.
+
+(message (format "window-system is %s" window-system))
+(message (format "system-type is %s" system-type))
+;;
+;; OS dependent custom-set-faces
+;;
 
 (let ((bg_color "white"))
   (if (string= window-system nil)

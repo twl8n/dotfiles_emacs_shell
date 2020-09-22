@@ -1371,10 +1371,13 @@ Version 2016-07-17"
     (switch-to-buffer org-buf)
     (kill-buffer buf)))
 
+;;
+;; Operating system dependencies. 
+;;
 
 ;; This error catching block exists because some settings are not portable across platforms and I don't like
 ;; fatal errors in this file. Emacs saving customizations doesn't understand custom-set-variables when it is
-;; inside another block, so if you save you'll have to manually copy the new setting here.
+;; inside another block, so if you save you'll have to manually copy the new settings here.
 
 (condition-case err
     (custom-set-variables
@@ -1387,6 +1390,7 @@ Version 2016-07-17"
      '(php-template-compatibility nil)
      ;; Always use symmetric for .gpg files
      '(epa-file-select-keys 2)
+     ;; the format of the mode like aka status at the bottom of the Emacs window.
      '(mode-line-format
        (quote
         ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
@@ -1411,8 +1415,6 @@ Version 2016-07-17"
      '(term-unbind-key-list (quote ("C-c"))))
   (error ))
 
-;; Operating system dependencies. 
-
 ;; We have two possible :background colors. The same two colors apply to both operating systems. Each os has a
 ;; different custom-set-faces. After setting the os specific customizations, both use the same command to set
 ;; the :background. Many settings are the same. The fonts are the big os specific issue. Could separate those
@@ -1431,8 +1433,13 @@ Version 2016-07-17"
 (message (format "window-system is %s" window-system))
 (message (format "system-type is %s" system-type))
 
+;;
+;; OS dependent custom-set-faces
+;;
+
 (let ((bg_color "white"))
-  (if (string= window-system nil)
+  ;; terminal aka no windowing system
+  (if (string= window-system nil) 
       (custom-set-faces
        '(default ((t (:inherit nil
                                :stipple nil
@@ -1448,7 +1455,7 @@ Version 2016-07-17"
                                :width normal
                                :foundry "bitstream"
                                :family "Courier 10 Pitch")))))
-    ;; else mac osx darwin
+    ;; else Apple Macintosh OSX Darwin windowing system
     (if (string= system-type 'darwin )
         (custom-set-faces
          '(default ((t (:inherit nil
@@ -1466,7 +1473,7 @@ Version 2016-07-17"
                                  :width normal
                                  :foundry "nil"
                                  :family "Menlo")))))
-      ;; else Linux
+      ;; else Linux X-Windows windowing system
       (custom-set-faces
        '(default ((t (:inherit nil
                                :stipple nil
