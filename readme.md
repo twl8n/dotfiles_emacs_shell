@@ -6,11 +6,15 @@ See the extensive comments inline.
 
 The file .emacs is a single config file works with both Apple Mac OS X and Linux. Unknown how it behaves on MS Windows.
 
-Unfortunately, to get multiplatform behavior, it kind of breaks with the typical convention of a single
+Unfortunately, to get multiplatform behavior, my .emacs file kind of breaks with the typical convention of a single
 custom-set-variables and custom-set-faces. If you find the need to save something from Emacs customization
-user interface , a new custom-set-variables will appear at the end of the .emacs. You need to manually copy
-any new stuff from the section at the end into blocks of code `custom-set-variables` or `custom-set-faces`.
-After that, delete the spurious custom-set-variables at the end of the file.
+user interface, a new custom-set-variables will appear at the end of your .emacs. You need to manually move
+any new stuff from the section at the end into blocks of code above
+
+The "above" is noted by a comment `;; Operating system dependencies.` Put the your new variable settings inside `custom-set-variables` in this block.
+Below that is `;; OS dependent custom-set-faces ` which is a `let` binding with 3 sections for `custom-set-faces`: terminal, Macintosh, Linux. Sadly, I don't have a section for Microsoft Windows.
+
+After moving the settings, delete the now-extra `custom-set-variables` at the end of your .emacs file.
 
 Setting the background to nil works in both windowing and -nw emacs. Sadly, in most xterms with -nw
 :background "White" ends up as gray. If you want to use Emacs in xterm, you probably want xterm-256color.
