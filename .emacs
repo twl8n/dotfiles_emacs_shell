@@ -7,7 +7,7 @@
 ;; Note that I've moved custom settings inside an if that tests for operating system and type of windowing or
 ;; cli environment. Also, font names aren't portable across platforms.  And other stuff.
 
-;; Skip to "*** Core key bindings below" for key bindings.
+;; Skip to "*** Core key bindings begin here" for key bindings.
 ;; Also see "Weird Mac stuff" below.
 
 ;; overload set-file-acl which doesn't work. 
@@ -24,7 +24,7 @@
 (add-to-list 'load-path "~/.emacs.d/lisp")
 (add-to-list 'load-path (getenv "HOME") "/.emacs.d/lisp")
 
-(add-hook 'message-mode-hook 'turn-on-orgtbl)
+;; (add-hook 'message-mode-hook 'turn-on-orgtbl)
 
 (defun orgtbl-enable ()
   "Turn on the orgtab-mode."
@@ -39,9 +39,21 @@
 ;; Assume Emacs >= 24
 ;; M-x list-packages to list and install.
 ;; https://www.emacswiki.org/emacs/InstallingPackages
+;; Added nov 24 2016
+;; http://clojure-doc.org/articles/tutorials/emacs.html
+;; Add melpa so we can get clojure related stuff.
+;; https://github.com/clojure-emacs/clojure-mode
+;; https://github.com/clojure-emacs/cider
+;; https://github.com/bbatsov/projectile
+;; Updated 2021-01-26
+;; https://stackoverflow.com/questions/61447088/unable-to-install-cider-to-emacs-package-not-found
 
 (require 'package)
-(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
+(add-to-list 'package-archives
+             '("melpa-stable" . "http://stable.melpa.org/packages/") t)
+(package-initialize)
+(when (not package-archive-contents)
+  (package-refresh-contents))
 
 ;; Notes about color.
 ;; list-colors-display
@@ -100,23 +112,6 @@
       (setq emms-source-file-default-directory "~twl/Music/"))
   (message "emms not loaded"))
 
-;; None of this package stuff works due to multiple requirements. Maybe it isn't too hard, but I gave up on
-;; the second error. There are no docs for installing use-package, and no package for it in Melpa. Instead,
-;; just add this one line to enable flycheck, which was the whole point of use-package.
-
-;; For some reason, loading this causes a long delay during load, perhaps because fly-check is checking the
-;; .emacs file or checking every open file (which could be a large number of filess when using
-;; .emacs.desktop)? In any case, Emacs appears to be locked up. Not so much a feature, so fly-check-mode is
-;; not enabled.
-
-;; (add-hook 'after-init-hook 'global-flycheck-mode)
-
-;; http://emacs.stackexchange.com/questions/5828/why-do-i-have-to-add-each-package-to-load-path-or-problem-with-require-packag 
-;; (package-initialize)
-;; (use-package flycheck
-;;   :ensure t
-;;   :init (global-flycheck-mode))
-
 ;; Hmmm. This doesn't use safe-require, so I wonder what happens if we dont' have sql-indent.el?
 (eval-after-load "sql"
   '(load-library "sql-indent"))
@@ -144,7 +139,7 @@
 ;; The default doesn't work normally e.g. when you are in a project directory.
 ;; Normally cider looks a the directory to determine choices. There is no customization for this behavior, AFAIKT.
 (setq cider-jack-in-default 'clojure-cli)
-(setq cider-clojure-cli-global-options "-A:dev")
+;; (setq cider-clojure-cli-global-options "-A:dev")
 (setq cider-repl-use-pretty-printing 1)
 
 ;; Non-nil means a single space does not end a sentence.
@@ -251,20 +246,6 @@
 ;; (setq auto-mode-alist (cons (cons "\\.java$" 'java-mode) auto-mode-alist))
 ;; (setq auto-mode-alist (cons (cons "\\.cgi$" 'perl-mode) auto-mode-alist))
 (setq auto-mode-alist (cons (cons "\\.cgi$" 'cperl-mode) auto-mode-alist))
-
-;; Added nov 24 2016
-;; http://clojure-doc.org/articles/tutorials/emacs.html
-;; Add melpa so we can get clojure related stuff.
-;; https://github.com/clojure-emacs/clojure-mode
-;; https://github.com/clojure-emacs/cider
-;; https://github.com/bbatsov/projectile
-
-(require 'package)
-(add-to-list 'package-archives
-             '("melpa-stable" . "http://stable.melpa.org/packages/") t)
-(package-initialize)
-
-
 
 
 ;; added jun 24 2015
@@ -817,6 +798,14 @@ Version 2016-07-17"
 
 ;; 2020-04-21 Disable ido-mode which has become a nuisance when opening files and dirs
 (ido-mode nil)
+;; 2020-12-18 disable more ido
+(setq ido-auto-merge-work-directories-length -1)
+(setq ido-everywhere nil)
+;; https://www.emacswiki.org/emacs/InteractivelyDoThings
+;; ido-mode’s remapping keys are defined in ido-minor-mode-map-entry, this is not the keymap, but its ‘cdr’ is
+;; the keymap. So to disable the ‘C-x C-f’ remapping:
+(define-key (cdr ido-minor-mode-map-entry) [remap find-file] nil)
+
 
 ;; Enable ido-mode for fancy completion on buffer switch and file
 ;; open. We don't seem to need the require 'ido in recent versions of
@@ -915,29 +904,6 @@ Version 2016-07-17"
 ;; some kind of wrapping for text files.
 (setq auto-word-wrap-default-function nil)
 
-;; Important. http://stackoverflow.com/questions/683425/globally-override-key-binding-in-emacs
-;; I think this allows my preferred mode map to continue working when
-;; other minor modes are active. See my user-minor-mode-map define-key
-;; bindings below at "Core key bindings below". 
-
-(defvar user-minor-mode-map (make-sparse-keymap) "user-minor-mode keymap.")
-
-(define-minor-mode user-minor-mode
-  "A minor mode so that my key settings override annoying major modes."
-  t
-  " user-keys"
-  'user-minor-mode-map)
-
-;; Turn user-minor-mode on/off 1/0 in the mini-buffer.
-;; Oct 5 2009 Was 1 which was clearly a mistake. 
-
-(defun user-minibuffer-setup-hook ()
-  (user-minor-mode 0))
-
-(add-hook 'minibuffer-setup-hook 'user-minibuffer-setup-hook)
-
-(user-minor-mode 1)
-
 (defun noop ()
   "Placeholder for noop key bindings."
   (interactive)
@@ -975,15 +941,38 @@ Version 2016-07-17"
 ;; Use new kdb syntax available as of 19.30
 ;; http://tiny-tools.sourceforge.net/emacs-keys.html
 
+;; 2020-12-18 Move the user minor mode stuff here with key bindings, rather than 60 lines above. I hope
+;; nothing breaks.
+
+;; Important. http://stackoverflow.com/questions/683425/globally-override-key-binding-in-emacs
+;; I think this allows my preferred mode map to continue working when
+;; other minor modes are active.
+
+(defvar user-minor-mode-map (make-sparse-keymap) "user-minor-mode keymap.")
+
+(define-minor-mode user-minor-mode
+  "A minor mode so that my key settings override annoying major modes."
+  t
+  " user-keys"
+  'user-minor-mode-map)
+
+;; Turn user-minor-mode on/off 1/0 in the mini-buffer.
+;; Oct 5 2009 Was 1 which was clearly a mistake. 
+
+(defun user-minibuffer-setup-hook ()
+  (user-minor-mode 0))
+
+(add-hook 'minibuffer-setup-hook 'user-minibuffer-setup-hook)
+
+(user-minor-mode 1)
+
 ;; 2019-08-10 I'm tired of hitting C-x C-b when I meant C-x b
 ;; It is bound to C-x C-b, <menu-bar> <buffer> <list-all-buffers>.
 (define-key user-minor-mode-map "\C-x\C-b" 'ido-switch-buffer) ;; was list-buffers
 (define-key user-minor-mode-map "\C-xb" 'ido-switch-buffer)
 (define-key user-minor-mode-map "\C-xlb" 'list-buffers) ;; lb does the old binding list-buffers
 
-
 (define-key global-map [S-a] 'mark-whole-buffer) ;; was self-insert-command
-
 
 ;; option-d insert today's date. The original key binding delete word forward, but I never used that.
 (define-key user-minor-mode-map (kbd "s-d") '(lambda () "Insert today's date." (interactive) (insert (format-time-string "%Y-%m-%d"))))
@@ -1004,7 +993,8 @@ Version 2016-07-17"
 
 ;; Replace C-w kill-region with a defun that only kills the active region, and does not kill to the mark when
 ;; not active. Killing to the mark when no active selection is really irritating, and I'm fairly sure I never
-;; want to do that. Or very rarely. If I want to kill to the mark, C-x C-x (exchange-point-and-mark) then C-w will do it.
+;; want to do that. Or very rarely. If I want to kill to the mark, C-x C-x (exchange-point-and-mark) then C-w
+;; will do it.
 
 (global-set-key (kbd "C-w") 'kill-active-region)  ;; default is kill-region
 
@@ -1377,7 +1367,7 @@ Version 2016-07-17"
 
 ;; This error catching block exists because some settings are not portable across platforms and I don't like
 ;; fatal errors in this file. Emacs saving customizations doesn't understand custom-set-variables when it is
-;; inside another block, so if you save you'll have to manually copy the new settings here.
+;; inside another block, so if you save you'll have to manually copy the new setting here.
 
 (condition-case err
     (custom-set-variables
@@ -1390,7 +1380,6 @@ Version 2016-07-17"
      '(php-template-compatibility nil)
      ;; Always use symmetric for .gpg files
      '(epa-file-select-keys 2)
-     ;; the format of the mode like aka status at the bottom of the Emacs window.
      '(mode-line-format
        (quote
         ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
@@ -1499,3 +1488,36 @@ Version 2016-07-17"
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 
 
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(cua-mode nil nil (cua-base))
+ '(epa-file-select-keys 2)
+ '(ess-S-assign "_")
+ '(line-move-visual nil)
+ '(mode-line-format
+   (quote
+    ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
+     (vc-mode vc-mode)
+     "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
+ '(package-selected-packages
+   (quote
+    (gnu-elpa-keyring-update cider emms yaml-mode projectile go-mode cider-eval-sexp-fu)))
+ '(php-template-compatibility nil)
+ '(term-bind-key-alist
+   (quote
+    (("C-c C-x b" . switch-to-buffer)
+     ("C-c M-x" . execute-extended-command)
+     ("C-c C-c" . term-interrupt-subjob)
+     ("M-`" . other-frame)
+     ("C-m" . term-send-raw))))
+ '(term-unbind-key-list (quote ("C-c"))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 180 :width normal :foundry "nil" :family "Menlo")))))
