@@ -26,6 +26,22 @@
 
 ;; (add-hook 'message-mode-hook 'turn-on-orgtbl)
 
+;; 2022-06-06 I've commented out a local binding of default-directory and use the emacs var.
+;; My version of emacs seems to be too old to have project.el.
+;; This works, but could break if the default dir is somehow different from the current buffer's dir.
+(defun cider-jack-in-babashka ()
+  (interactive)
+  (let* (;; (default-directory (project-root (project-current t)))
+         (port (+ 1024 (random 5000)))
+         (params `(:host "localhost"
+                   :port ,port
+                   :project-dir ,default-directory)))
+    (start-process-shell-command "babashka-nrepl" "*babashka-nrepl*"
+                                 (concat "bb nrepl-server " (number-to-string port)))
+    (sleep-for 0.5)
+    (cider-connect-clj params)))
+
+
 (defun orgtbl-enable ()
   "Turn on the orgtab-mode."
   (interactive)
