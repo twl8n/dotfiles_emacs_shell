@@ -26,24 +26,8 @@
 
 ;; (add-hook 'message-mode-hook 'turn-on-orgtbl)
 
-;; 2022-06-06 I've commented out a local binding of default-directory and use the emacs var.
-;; My version of emacs seems to be too old to have project.el.
-;; This works, but could break if the default dir is somehow different from the current buffer's dir.
-(defun cider-jack-in-babashka ()
-  (interactive)
-  (let* (;; (default-directory (project-root (project-current t)))
-         (port (+ 1024 (random 5000)))
-         (params `(:host "localhost"
-                   :port ,port
-                   :project-dir ,default-directory)))
-    (start-process-shell-command "babashka-nrepl" "*babashka-nrepl*"
-                                 (concat "bb nrepl-server " (number-to-string port)))
-    (sleep-for 0.5)
-    (cider-connect-clj params)))
-
-
 (defun orgtbl-enable ()
-  "Turn on the orgtab-mode."
+  "Turn on the org table mode. Unconditionally turn on ‘orgtbl-mode’."
   (interactive)
   (turn-on-orgtbl))
 
@@ -376,6 +360,10 @@
 ;; Nov 11 2014 Oddly, even with auto save disabled, some files occasionally end up in .saves. Unclear why, but
 ;; it does mean that if you want those random saves to be local, you still need to configure a local save
 ;; directory.
+
+;; 2022-06-23 foo~ is a backup (not an autosave).
+
+(setq make-backup-files nil) ; stop creating ~ files
 
 (setq
  auto-save-file-name-transforms '((".*" "~/.saves/\\1" t))
@@ -993,6 +981,11 @@ Version 2016-07-17"
 ;; option-d insert today's date. The original key binding delete word forward, but I never used that.
 (define-key user-minor-mode-map (kbd "s-d") '(lambda () "Insert today's date." (interactive) (insert (format-time-string "%Y-%m-%d"))))
 
+;; 2023-12-24 shift-option-d insert today's date with day of week.
+;; The original key binding was ido-dired, but I never used that.
+;; For some reason [s-D] did not override the key binding, but (kbd "s-D") does override the default binding.
+(define-key user-minor-mode-map (kbd "s-D") '(lambda () "Insert today's date." (interactive) (insert (format-time-string "%Y-%m-%d %A"))))
+
 ;; Super-a aka option-a. Requires that the Option key is modified to send Super. See "Weird Mac stuff" below.
 (define-key user-minor-mode-map [C-x C-b] 'ido-switch-buffer) ;; was list-buffers
 
@@ -1377,6 +1370,36 @@ Version 2016-07-17"
     (switch-to-buffer org-buf)
     (kill-buffer buf)))
 
+;; 2023-08-10 Add support for several types of file encryption, especially openssl
+;; See .emacs.d/lisp/crypt++.el
+
+(setq crypt-user-defined-encryption-alist
+      (list (list 'aes-256-cbc
+                  t
+                  '(not (re-search-forward "U2FsdGVkX1"
+                                           (min (point-max)
+                                                crypt-magic-search-limit) t))
+                  "\\(\\.ose\\|\\.aes\\|\\.e\\|\\.ex\\)$"
+                  "openssl" "openssl"
+                  '("aes-256-cbc" "-pbkdf2" "-e" "-k")
+                  '("aes-256-cbc" "-pbkdf2" "-d" "-k")
+                  "OpenSSL"
+                  nil
+                  t))
+      crypt-encryption-type 'aes-256-cbc
+      crypt-auto-write-buffer-encrypted t)
+
+(if (featurep 'crypt++)
+
+    ;; Yes.  Just rebuild the encryption and encoding tables
+    ;; and key binding.
+    (progn
+      (crypt-rebuild-tables)
+      (crypt-bind-insert-file))
+
+  ;; No.  Load the whole thing.
+  (require 'crypt++))
+
 ;;
 ;; Operating system dependencies. 
 ;;
@@ -1474,7 +1497,7 @@ Version 2016-07-17"
                                  :underline nil
                                  :slant normal
                                  :weight normal
-                                 :height 180
+                                 :height 180; 120 ; 180
                                  :width normal
                                  :foundry "nil"
                                  :family "Menlo")))))
@@ -1502,38 +1525,3 @@ Version 2016-07-17"
 
 (autoload 'js2-mode "js2" nil t)
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-
-
-
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(cua-mode nil nil (cua-base))
- '(epa-file-select-keys 2)
- '(ess-S-assign "_")
- '(line-move-visual nil)
- '(mode-line-format
-   (quote
-    ("%e" mode-line-front-space mode-line-mule-info mode-line-client mode-line-modified mode-line-remote mode-line-frame-identification mode-line-buffer-identification "   " mode-line-position
-     (vc-mode vc-mode)
-     "  " mode-line-modes mode-line-misc-info default-directory mode-line-end-spaces)))
- '(package-selected-packages
-   (quote
-    (gnu-elpa-keyring-update cider emms yaml-mode projectile go-mode cider-eval-sexp-fu)))
- '(php-template-compatibility nil)
- '(term-bind-key-alist
-   (quote
-    (("C-c C-x b" . switch-to-buffer)
-     ("C-c M-x" . execute-extended-command)
-     ("C-c C-c" . term-interrupt-subjob)
-     ("M-`" . other-frame)
-     ("C-m" . term-send-raw))))
- '(term-unbind-key-list (quote ("C-c"))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 180 :width normal :foundry "nil" :family "Menlo")))))
