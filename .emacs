@@ -984,7 +984,7 @@ Version 2016-07-17"
 ;; 2023-12-24 shift-option-d insert today's date with day of week.
 ;; The original key binding was ido-dired, but I never used that.
 ;; For some reason [s-D] did not override the key binding, but (kbd "s-D") does override the default binding.
-(define-key user-minor-mode-map (kbd "s-D") '(lambda () "Insert today's date." (interactive) (insert (format-time-string "%Y-%m-%d %A"))))
+(define-key user-minor-mode-map (kbd "s-D") '(lambda () "Insert today's date, with day of week." (interactive) (insert (format-time-string "%Y-%m-%d %A"))))
 
 ;; Super-a aka option-a. Requires that the Option key is modified to send Super. See "Weird Mac stuff" below.
 (define-key user-minor-mode-map [C-x C-b] 'ido-switch-buffer) ;; was list-buffers
