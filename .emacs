@@ -105,13 +105,6 @@
      (message "safe-require warning: %s" (error-message-string err))
      nil )))
 
-(if (safe-require 'emms-setup)
-    (progn
-      (emms-all)
-      (emms-default-players)
-      (setq emms-source-file-default-directory "~twl/Music/"))
-  (message "emms not loaded"))
-
 ;; Hmmm. This doesn't use safe-require, so I wonder what happens if we dont' have sql-indent.el?
 (eval-after-load "sql"
   '(load-library "sql-indent"))
@@ -333,6 +326,14 @@
 ;; Something broke during an upgrade to OSX and/or Emacs. rsync stopped working.
 ;; (setq tramp-default-method "rsync")
 
+;; 2024-12-13 Disable lockfiles. Supported as of version 24.3
+;; Lockfiles change directory timestamps which is bad for build systems.
+;; Besides, I don't like lockfiles mysteriously appearing and disappearing. And they were
+;; implemented as symlinks pointing to non-existent (?) files.
+;; https://stackoverflow.com/questions/5738170/why-does-emacs-create-temporary-symbolic-links-for-modified-files
+
+(setq create-lockfiles nil)
+
 ;; Disable auto save for all buffers. I manually disable auto-save when I'm using tramp or
 ;; sshfs and fuse. Might be better to just eval this by hand rather than have it
 ;; here. However, I'm typically a compusive saver so I probably won't notice if it
@@ -388,6 +389,9 @@
 ;; (add-hook 'before-save-hook  'force-backup-of-buffer)
 ;; (defun force-backup-of-buffer ()
 ;;     (setq buffer-backed-up nil))
+
+;; 2024-12-13 As of today, the .saves dir is empty. Unclear when autosaves were finally disabled.
+;; Maybe we no longer need to create the .saves dir?
 
 ;; create the autosave dir if necessary, since emacs won't.
 (make-directory "~/.saves/" t)
@@ -858,11 +862,10 @@ Version 2016-07-17"
 (setq zmacs-regions nil)
 
 ;; ispell settings jul 16 2015
-(setq ispell-program-name "aspell")
-(setq ispell-program-name "/usr/pkg/bin/aspell")
+(setq ispell-program-name "/usr/local/bin/aspell")
 
 ;; Uncomment to automatically load ispell at startup.
-;(load "ispell")
+(load "ispell")
 
 ;; Uncomment for hexl. It seems better to just manually switch to hexl-mode via C-x.
 
